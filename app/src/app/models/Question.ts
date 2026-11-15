@@ -1,24 +1,20 @@
-import { JsonObject, JsonProperty } from "json2typescript";
+import { z } from "zod";
 
-import { Answer } from "./Answer";
+import { AnswerSchema } from "./Answer";
 
-@JsonObject("Question")
-export class Question {
-    @JsonProperty("uuid")
-    uuid: string = undefined;
+export const QuestionSchema = z
+    .object({
+        uuid: z.string(),
+        url: z.string(),
+        text: z.string(),
+        answers: z.array(AnswerSchema),
+        updated_at: z.coerce.date(),
+        created_at: z.coerce.date(),
+    })
+    .transform(({ updated_at, created_at, ...rest }) => ({
+        ...rest,
+        updatedAt: updated_at,
+        createdAt: created_at,
+    }));
 
-    @JsonProperty("url")
-    url: string = undefined;
-
-    @JsonProperty("text")
-    text: string = undefined;
-
-    @JsonProperty("answers")
-    answers: Answer[] = undefined;
-
-    @JsonProperty("updated_at")
-    updatedAt: Date = undefined;
-
-    @JsonProperty("created_at")
-    createdAt: Date = undefined;
-}
+export type Question = z.infer<typeof QuestionSchema>;

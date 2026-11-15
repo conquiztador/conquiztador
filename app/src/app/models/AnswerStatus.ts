@@ -1,7 +1,9 @@
-import { JsonObject, JsonProperty } from "json2typescript";
+import { z } from "zod";
 
-@JsonObject("AnswerStatus")
-export class AnswerStatus {
-    @JsonProperty("is_correct")
-    isCorrect: boolean = undefined;
-}
+export const AnswerStatusSchema = z
+    .object({
+        is_correct: z.boolean(),
+    })
+    .transform(({ is_correct }) => ({ isCorrect: is_correct }));
+
+export type AnswerStatus = z.infer<typeof AnswerStatusSchema>;

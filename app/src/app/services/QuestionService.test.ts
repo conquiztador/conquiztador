@@ -1,15 +1,12 @@
 import { describe, it, expect, jest } from "@jest/globals";
 import axios from "axios";
-import { JsonConvert } from "json2typescript";
 
-import { Question } from "app/models/Question";
-import { AnswerStatus } from "app/models/AnswerStatus";
+import { ZodError } from "zod";
+
 import { QuestionService } from "./QuestionService";
 import { environment } from "src/environments/environment";
 
 jest.mock("axios");
-
-const jsonConvert = new JsonConvert();
 
 describe("fetchData", () => {
     it("Should read random question", async () => {
@@ -24,17 +21,25 @@ describe("fetchData", () => {
                 {
                     uuid: "answer-uuid",
                     text: "Answer text",
-                    updated_at: date.toISOString(),
-                    created_at: date.toISOString(),
                 },
             ],
             updated_at: date.toISOString(),
             created_at: date.toISOString(),
         };
 
-        const jsonConvert = new JsonConvert();
-
-        const expectedResult = jsonConvert.deserialize(questionData, Question);
+        const expectedResult = {
+            url: "/api/questions/question-uuid",
+            uuid: "question-uuid",
+            text: "Lorem ipsum dolor sit amet",
+            answers: [
+                {
+                    uuid: "answer-uuid",
+                    text: "Answer text",
+                },
+            ],
+            updatedAt: date,
+            createdAt: date,
+        };
 
         const response = {
             data: questionData,
@@ -61,10 +66,7 @@ describe("fetchData", () => {
             is_correct: true,
         };
 
-        const expectedResult = jsonConvert.deserialize(
-            answerStatusData,
-            AnswerStatus
-        );
+        const expectedResult = { isCorrect: true };
 
         const response = {
             data: answerStatusData,
@@ -95,5 +97,16 @@ describe("fetchData", () => {
             `${environment.apiUrl}/questions/${questionStub.uuid}/validate-answer/`,
             { uuid: questionStub.answers[0].uuid }
         );
+    });
+
+    it("Should reject a malformed question", async () => {
+        const service = new QuestionService();
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (axios.get as any).mockImplementationOnce(() =>
+            Promise.resolve({ data: { uuid: "question-uuid" } })
+        );
+
+        await expect(service.readRandomQuestion()).rejects.toThrow(ZodError);
     });
 });

@@ -1,16 +1,8 @@
-import { JsonObject, JsonProperty } from "json2typescript";
+import { z } from "zod";
 
-@JsonObject("Answer")
-export class Answer {
-    @JsonProperty("uuid")
-    uuid: string = undefined;
+export const AnswerSchema = z.object({
+    uuid: z.string(),
+    text: z.string(),
+});
 
-    @JsonProperty("text")
-    text: string = undefined;
-
-    @JsonProperty("updated_at")
-    updatedAt: Date = undefined;
-
-    @JsonProperty("created_at")
-    createdAt: Date = undefined;
-}
+export type Answer = z.infer<typeof AnswerSchema>;

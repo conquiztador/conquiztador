@@ -1,18 +1,16 @@
 import axios from "axios";
-import { JsonConvert } from "json2typescript";
 
 import { environment } from "src/environments/environment";
-import { Question } from "models/Question";
-import { AnswerStatus } from "models/AnswerStatus";
+import { Question, QuestionSchema } from "models/Question";
+import { AnswerStatus, AnswerStatusSchema } from "models/AnswerStatus";
 
 export class QuestionService {
     async readRandomQuestion(): Promise<Question> {
         const response = await axios.get(
             `${environment.apiUrl}/questions/random/`
         );
-        const jsonConvert = new JsonConvert();
 
-        return jsonConvert.deserialize(response.data, Question) as Question;
+        return QuestionSchema.parse(response.data);
     }
 
     async validateAnswer(
@@ -24,11 +22,6 @@ export class QuestionService {
             { uuid: question.answers[answerIndex].uuid }
         );
 
-        const jsonConvert = new JsonConvert();
-
-        return jsonConvert.deserialize(
-            response.data,
-            AnswerStatus
-        ) as AnswerStatus;
+        return AnswerStatusSchema.parse(response.data);
     }
 }
