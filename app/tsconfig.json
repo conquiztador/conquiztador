@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "assets/*": ["src/assets/*"],
+      "app/*": ["src/app/*"],
+      "components/*": ["src/app/components/*"],
+      "managers/*": ["src/app/managers/*"],
+      "services/*": ["src/app/services/*"],
+      "models/*": ["src/app/models/*"],
+      "utils/*": ["src/app/utils/*"],
+      "shared/*": ["src/app/shared/*"]
+    },
+    "outDir": "./dist/",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "node",
+    "module": "es6",
+    "target": "es5",
+    "allowJs": true,
+    "esModuleInterop": true
+  }
+}
