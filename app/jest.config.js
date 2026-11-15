@@ -3,7 +3,7 @@ module.exports = {
     testEnvironment: "node",
     moduleNameMapper: {
         "^src/(.*)": "<rootDir>/src/$1",
-        "^assets/(.*)": "<rootDir>/src/assets/$1",
+        "^assets/(.*)": "<rootDir>/public/assets/$1",
         "^app/(.*)": "<rootDir>/src/app/$1",
         "^components/(.*)": "<rootDir>/src/app/components/$1",
         "^managers/(.*)": "<rootDir>/src/app/managers/$1",

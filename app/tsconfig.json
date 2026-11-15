@@ -2,7 +2,7 @@
   "compilerOptions": {
     "paths": {
       "src/*": ["./src/*"],
-      "assets/*": ["./src/assets/*"],
+      "assets/*": ["./public/assets/*"],
       "app/*": ["./src/app/*"],
       "components/*": ["./src/app/components/*"],
       "managers/*": ["./src/app/managers/*"],
@@ -20,8 +20,8 @@
     "moduleResolution": "bundler",
     "module": "esnext",
     "target": "es2017",
-    "lib": ["es2017", "dom"],
-    "types": ["jest"],
+    "lib": ["es2020", "dom"],
+    "types": ["jest", "vite/client"],
     "skipLibCheck": true,
     "allowJs": true,
     "esModuleInterop": true
