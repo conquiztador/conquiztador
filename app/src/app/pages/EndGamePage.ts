@@ -36,12 +36,15 @@ export class EndGamePage extends Page {
     }
 
     private addGameOverText() {
-        const gameOverText = new PIXI.Text("Game over", {
-            fontFamily: "Arial",
-            fontWeight: "bold",
-            fontSize: 24,
-            fill: 0xffffff,
-            align: "center",
+        const gameOverText = new PIXI.Text({
+            text: "Game over",
+            style: {
+                fontFamily: "Arial",
+                fontWeight: "bold",
+                fontSize: 24,
+                fill: 0xffffff,
+                align: "center",
+            },
         });
 
         this.addChild(gameOverText);
@@ -51,16 +54,16 @@ export class EndGamePage extends Page {
     }
 
     private addScoreText() {
-        this.scoreText = new PIXI.Text(
-            `Your final score is: ${this.scoreService.score}`,
-            {
+        this.scoreText = new PIXI.Text({
+            text: `Your final score is: ${this.scoreService.score}`,
+            style: {
                 fontFamily: "Arial",
                 fontWeight: "bold",
                 fontSize: 24,
                 fill: 0xffffff,
                 align: "center",
-            }
-        );
+            },
+        });
 
         this.addChild(this.scoreText);
 

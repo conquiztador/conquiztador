@@ -6,7 +6,7 @@ import LayerManager from "app/managers/LayerManager";
 
 @Service()
 export class Page extends PIXI.Container {
-    protected background: PIXI.Sprite
+    protected background: PIXI.Sprite;
 
     constructor(
         protected app: Application,
@@ -18,15 +18,15 @@ export class Page extends PIXI.Container {
 
         this.addBackground();
 
-        window.addEventListener('resize', () => {
-            this.redraw()
+        window.addEventListener("resize", () => {
+            this.redraw();
         });
     }
 
     protected addBackground(): void {
-        this.background = this.createBackground()
+        this.background = this.createBackground();
 
-        this.background.parentLayer = this.layerManager.background;
+        this.layerManager.background.attach(this.background);
 
         this.addChild(this.background);
     }
@@ -49,16 +49,16 @@ export class Page extends PIXI.Container {
         context.fillStyle = gradient;
         context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
-        const baseTexture = new PIXI.BaseTexture(context.canvas);
-        const texture = new PIXI.Texture(baseTexture);
+        const texture = PIXI.Texture.from(context.canvas);
 
         return new PIXI.Sprite(texture);
     }
 
     protected redraw(): void {
         if (this.background) {
-            this.background.parent.removeChild(this.background)
-            this.addBackground()
+            this.layerManager.background.detach(this.background);
+            this.background.destroy({ texture: true, textureSource: true });
+            this.addBackground();
         }
     }
 }

@@ -33,18 +33,18 @@ export class Main {
             this.blueSquare
         );
 
-        this.redSquare.parentLayer = this.layerManager.foreground;
-        this.greenSquare.parentLayer = this.layerManager.background;
-        this.blueSquare.parentLayer = this.layerManager.background;
+        this.layerManager.foreground.attach(this.redSquare);
+        this.layerManager.background.attach(this.greenSquare);
+        this.layerManager.background.attach(this.blueSquare);
 
-        this.greenSquare.zOrder = 2;
-        this.blueSquare.zOrder = 1;
+        this.greenSquare.zIndex = 2;
+        this.blueSquare.zIndex = 1;
 
         this.addKeyboardEvents();
     }
 
     private createSquare(color: string): PIXI.Sprite {
-        const texture = PIXI.utils.TextureCache[`assets/${color}-square.jpg`];
+        const texture = PIXI.Texture.from(`assets/${color}-square.jpg`);
 
         return new PIXI.Sprite(texture);
     }

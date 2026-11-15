@@ -1,21 +1,27 @@
 import * as PIXI from "pixi.js";
-import { Stage } from "@pixi/layers";
 import { Service } from "typedi";
 
 @Service()
 export default class Application extends PIXI.Application {
     public get center(): PIXI.Point {
-        const x = this.renderer.width / 2;
-        const y = this.renderer.height / 2;
+        const x = this.screen.width / 2;
+        const y = this.screen.height / 2;
 
         return new PIXI.Point(x, y);
     }
 
-    constructor() {
-        super({ width: 1280, height: 768, antialias: true, resizeTo: window });
+    /**
+     * Initializes the renderer and attaches the canvas to the page.
+     * Must be awaited before any other service uses the application.
+     */
+    async setup(): Promise<void> {
+        await this.init({
+            width: 1280,
+            height: 768,
+            antialias: true,
+            resizeTo: window,
+        });
 
-        this.stage = new Stage();
-
-        document.body.appendChild(this.view);
+        document.body.appendChild(this.canvas);
     }
 }

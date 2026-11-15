@@ -4,6 +4,7 @@ import * as PIXI from "pixi.js";
 import { Container } from "typedi";
 
 import "./styles/main.css";
+import Application from "./Application";
 import { MenuPage } from "./pages/MenuPage";
 import { GamePage } from "./pages/GamePage";
 import { EndGamePage } from "./pages/EndGamePage";
@@ -11,17 +12,19 @@ import { EndGamePage } from "./pages/EndGamePage";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).PIXI = PIXI;
 
-const loader = PIXI.Loader.shared;
+async function main() {
+    await Container.get(Application).setup();
 
-loader
-    .add("assets/white-square.jpg")
-    .add("assets/red-square.jpg")
-    .add("assets/green-square.jpg")
-    .add("assets/blue-square.jpg")
-    .load(setup);
+    await PIXI.Assets.load([
+        "assets/white-square.jpg",
+        "assets/red-square.jpg",
+        "assets/green-square.jpg",
+        "assets/blue-square.jpg",
+    ]);
 
-function setup() {
     Container.get(MenuPage);
     Container.get(GamePage);
     Container.get(EndGamePage);
 }
+
+main();

@@ -15,19 +15,22 @@ export class ScoreComponent extends PIXI.Container {
     }
 
     addScore(): void {
-        this.scoreText = new PIXI.Text(`${this.scoreService.score}`, {
-            fontFamily: "Arial",
-            fontWeight: "bold",
-            fontSize: 24,
-            fill: 0xffffff,
-            align: "center",
+        this.scoreText = new PIXI.Text({
+            text: `${this.scoreService.score}`,
+            style: {
+                fontFamily: "Arial",
+                fontWeight: "bold",
+                fontSize: 24,
+                fill: 0xffffff,
+                align: "center",
+            },
         });
 
         this.addChild(this.scoreText);
 
         this.scoreText.anchor.set(1, 0);
         this.scoreText.position.set(
-            this.app.view.width - this.scoreText.width,
+            this.app.screen.width - this.scoreText.width,
             10
         );
     }

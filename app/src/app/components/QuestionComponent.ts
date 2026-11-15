@@ -30,12 +30,15 @@ export class QuestionComponent extends PIXI.Container {
     }
 
     private addQuestionText(question: Question) {
-        const questionText = new PIXI.Text(question.text, {
-            fontFamily: "Arial",
-            fontWeight: "bold",
-            fontSize: 24,
-            fill: 0xffffff,
-            align: "center",
+        const questionText = new PIXI.Text({
+            text: question.text,
+            style: {
+                fontFamily: "Arial",
+                fontWeight: "bold",
+                fontSize: 24,
+                fill: 0xffffff,
+                align: "center",
+            },
         });
 
         this.addChild(questionText);
