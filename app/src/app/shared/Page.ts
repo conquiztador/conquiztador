@@ -1,10 +1,8 @@
-import { Service } from "typedi";
 import * as PIXI from "pixi.js";
 
 import Application from "../Application";
 import LayerManager from "app/managers/LayerManager";
 
-@Service()
 export class Page extends PIXI.Container {
     protected background: PIXI.Sprite;
 

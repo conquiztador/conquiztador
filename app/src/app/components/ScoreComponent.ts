@@ -1,10 +1,8 @@
-import { Service } from "typedi";
 import * as PIXI from "pixi.js";
 
 import Application from "../Application";
 import { ScoreService } from "app/services/ScoreService";
 
-@Service()
 export class ScoreComponent extends PIXI.Container {
     private scoreText: PIXI.Text;
 

@@ -1,11 +1,9 @@
-import { Service } from "typedi";
 import * as PIXI from "pixi.js";
 
 import Application from "app/Application";
 import KeyboardManager from "managers/KeyboardManager";
 import LayerManager from "managers/LayerManager";
 
-@Service()
 export class Main {
     private whiteSquare: PIXI.Sprite;
     private redSquare: PIXI.Sprite;

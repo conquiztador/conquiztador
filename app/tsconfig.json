@@ -15,7 +15,6 @@
     "sourceMap": true,
     "strict": false,
     "noImplicitAny": true,
-    "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "moduleResolution": "bundler",
     "module": "esnext",

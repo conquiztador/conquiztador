@@ -1,7 +1,5 @@
 import * as PIXI from "pixi.js";
-import { Service } from "typedi";
 
-@Service()
 export default class Application extends PIXI.Application {
     public get center(): PIXI.Point {
         const x = this.screen.width / 2;

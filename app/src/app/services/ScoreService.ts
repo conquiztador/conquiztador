@@ -1,6 +1,3 @@
-import { Service } from "typedi";
-
-@Service()
 export class ScoreService {
     private _score = 0;
 

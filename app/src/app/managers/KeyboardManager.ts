@@ -1,7 +1,5 @@
-import { Service } from "typedi";
 import * as PIXI from "pixi.js";
 
-@Service()
 export default class KeyboardManager {
     static readonly DOWN_EVENT = "down";
     static readonly UP_EVENT = "up";

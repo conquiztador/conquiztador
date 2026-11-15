@@ -1,4 +1,3 @@
-import { Service } from "typedi";
 import * as PIXI from "pixi.js";
 
 import Application from "../Application";
@@ -7,7 +6,6 @@ import { Question } from "app/models/Question";
 import { createButton } from "app/utils/elements";
 import { GameEvent } from "app/Events";
 
-@Service()
 export class QuestionComponent extends PIXI.Container {
     private _isValidationInProgress: boolean;
 

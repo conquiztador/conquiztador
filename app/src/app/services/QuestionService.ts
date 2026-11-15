@@ -1,4 +1,3 @@
-import { Service } from "typedi";
 import axios from "axios";
 import { JsonConvert } from "json2typescript";
 
@@ -6,7 +5,6 @@ import { environment } from "src/environments/environment";
 import { Question } from "models/Question";
 import { AnswerStatus } from "models/AnswerStatus";
 
-@Service()
 export class QuestionService {
     async readRandomQuestion(): Promise<Question> {
         const response = await axios.get(

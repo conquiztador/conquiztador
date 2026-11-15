@@ -1,4 +1,3 @@
-import { Service } from "typedi";
 import * as PIXI from "pixi.js";
 
 import Application from "../Application";
@@ -7,7 +6,6 @@ import { Page } from "shared/Page";
 import { createButton } from "app/utils/elements";
 import LayerManager from "app/managers/LayerManager";
 
-@Service()
 export class MenuPage extends Page {
     private _newGameButton: PIXI.Graphics;
 

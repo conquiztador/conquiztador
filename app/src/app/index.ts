@@ -1,10 +1,12 @@
-import "reflect-metadata";
-
 import * as PIXI from "pixi.js";
-import { Container } from "typedi";
 
 import "./styles/main.css";
 import Application from "./Application";
+import LayerManager from "./managers/LayerManager";
+import { QuestionService } from "./services/QuestionService";
+import { ScoreService } from "./services/ScoreService";
+import { QuestionComponent } from "./components/QuestionComponent";
+import { ScoreComponent } from "./components/ScoreComponent";
 import { MenuPage } from "./pages/MenuPage";
 import { GamePage } from "./pages/GamePage";
 import { EndGamePage } from "./pages/EndGamePage";
@@ -13,7 +15,8 @@ import { EndGamePage } from "./pages/EndGamePage";
 (window as any).PIXI = PIXI;
 
 async function main() {
-    await Container.get(Application).setup();
+    const app = new Application();
+    await app.setup();
 
     await PIXI.Assets.load([
         "assets/white-square.jpg",
@@ -22,9 +25,17 @@ async function main() {
         "assets/blue-square.jpg",
     ]);
 
-    Container.get(MenuPage);
-    Container.get(GamePage);
-    Container.get(EndGamePage);
+    const layerManager = new LayerManager(app);
+
+    const questionService = new QuestionService();
+    const scoreService = new ScoreService();
+
+    const questionComponent = new QuestionComponent(app, questionService);
+    const scoreComponent = new ScoreComponent(app, scoreService);
+
+    new MenuPage(app, layerManager);
+    new GamePage(app, layerManager, questionComponent, scoreComponent);
+    new EndGamePage(app, layerManager, scoreService);
 }
 
 main();

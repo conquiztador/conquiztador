@@ -1,4 +1,3 @@
-import { Service } from "typedi";
 import * as PIXI from "pixi.js";
 
 import Application from "../Application";
@@ -9,7 +8,6 @@ import { ScoreComponent } from "app/components/ScoreComponent";
 import { createButton } from "app/utils/elements";
 import LayerManager from "app/managers/LayerManager";
 
-@Service()
 export class GamePage extends Page {
     private _exitButton: PIXI.Graphics;
 
