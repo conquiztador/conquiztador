@@ -49,7 +49,18 @@ export class Page extends PIXI.Container {
 
         const texture = PIXI.Texture.from(context.canvas);
 
-        return new PIXI.Sprite(texture);
+        const sprite = new PIXI.Sprite(texture);
+
+        // The stage is scaled and offset to fit the design area; undo that
+        // so the background covers the whole window.
+        const stage = this.app.stage;
+        sprite.scale.set(1 / stage.scale.x);
+        sprite.position.set(
+            -stage.position.x / stage.scale.x,
+            -stage.position.y / stage.scale.y
+        );
+
+        return sprite;
     }
 
     protected redraw(): void {

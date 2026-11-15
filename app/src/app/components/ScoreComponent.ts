@@ -28,7 +28,7 @@ export class ScoreComponent extends PIXI.Container {
 
         this.scoreText.anchor.set(1, 0);
         this.scoreText.position.set(
-            this.app.screen.width - this.scoreText.width,
+            this.app.designWidth - this.scoreText.width,
             10
         );
     }
