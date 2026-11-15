@@ -1,25 +1,27 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
     "paths": {
-      "assets/*": ["src/assets/*"],
-      "app/*": ["src/app/*"],
-      "components/*": ["src/app/components/*"],
-      "managers/*": ["src/app/managers/*"],
-      "services/*": ["src/app/services/*"],
-      "models/*": ["src/app/models/*"],
-      "utils/*": ["src/app/utils/*"],
-      "shared/*": ["src/app/shared/*"]
+      "src/*": ["./src/*"],
+      "assets/*": ["./src/assets/*"],
+      "app/*": ["./src/app/*"],
+      "components/*": ["./src/app/components/*"],
+      "managers/*": ["./src/app/managers/*"],
+      "services/*": ["./src/app/services/*"],
+      "models/*": ["./src/app/models/*"],
+      "utils/*": ["./src/app/utils/*"],
+      "shared/*": ["./src/app/shared/*"]
     },
     "outDir": "./dist/",
     "sourceMap": true,
+    "strict": false,
     "noImplicitAny": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "moduleResolution": "node",
-    "module": "es6",
+    "moduleResolution": "bundler",
+    "module": "esnext",
     "target": "es2017",
     "lib": ["es2017", "dom"],
+    "types": ["jest"],
     "skipLibCheck": true,
     "allowJs": true,
     "esModuleInterop": true
