@@ -13,10 +13,19 @@ class TestMixin:
             email=email, password=password, **extra_fields
         )
 
-    def create_question(self, text="Question text", author=None, categories=None):
+    def create_question(
+        self,
+        text="Question text",
+        author=None,
+        categories=None,
+        kind=Question.Kind.MULTIPLE_CHOICE,
+        numeric_answer=None,
+    ):
         question = Question.objects.create(
             text=text,
             author=author or self.user,
+            kind=kind,
+            numeric_answer=numeric_answer,
         )
 
         if categories:

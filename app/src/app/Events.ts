@@ -4,5 +4,8 @@ export enum ButtonEvent {
 }
 
 export enum GameEvent {
-    answerSelected = "answerSelected",
+    /** Payload: GameConfig. Emitted by the lobby to start a match. */
+    startMatch = "startMatch",
+    /** Payload: final GameState. */
+    matchFinished = "matchFinished",
 }

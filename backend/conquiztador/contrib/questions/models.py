@@ -1,6 +1,7 @@
 import uuid
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -28,8 +29,24 @@ class Category(TimestampedModel):
 
 
 class Question(TimestampedModel):
+    class Kind(models.TextChoices):
+        MULTIPLE_CHOICE = "multiple_choice", _("Multiple choice")
+        NUMERIC = "numeric", _("Numeric")
+
     uuid = models.UUIDField(default=uuid.uuid4, primary_key=True)
     text = models.CharField(_("Text"), max_length=254)
+    kind = models.CharField(
+        _("Kind"),
+        max_length=32,
+        choices=Kind.choices,
+        default=Kind.MULTIPLE_CHOICE,
+    )
+    numeric_answer = models.FloatField(
+        _("Numeric answer"),
+        blank=True,
+        null=True,
+        help_text=_("The correct value for numeric questions."),
+    )
     author = models.ForeignKey(
         UserModel, related_name="questions", on_delete=models.CASCADE
     )
@@ -50,6 +67,12 @@ class Question(TimestampedModel):
 
     def get_absolute_url(self):
         return reverse("questions:detail", kwargs={"pk": self.pk})
+
+    def clean(self):
+        if self.kind == self.Kind.NUMERIC and self.numeric_answer is None:
+            raise ValidationError(
+                {"numeric_answer": _("Numeric questions need a numeric answer.")}
+            )
 
     @property
     def correct_answer(self):

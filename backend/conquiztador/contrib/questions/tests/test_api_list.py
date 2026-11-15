@@ -39,6 +39,7 @@ class QuestionListTestCase(APITestCase, TestMixin):
                     ),
                     "uuid": str(question.pk),
                     "text": question.text,
+                    "kind": "multiple_choice",
                     "answers": [
                         {
                             "uuid": str(answer.pk),
@@ -79,6 +80,7 @@ class QuestionListTestCase(APITestCase, TestMixin):
             ),
             "uuid": str(question.pk),
             "text": question.text,
+            "kind": "multiple_choice",
             "answers": [
                 {
                     "uuid": str(answer.pk),

@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -41,7 +42,17 @@ class QuestionViewSet(
         else:
             category = None
 
-        question = models.Question.objects.get_random(category)
+        kind = self.request.query_params.get("kind")
+        if kind is not None and kind not in models.Question.Kind.values:
+            return Response(
+                {"kind": f"Must be one of {models.Question.Kind.values}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            question = models.Question.objects.get_random(category, kind)
+        except ObjectDoesNotExist as error:
+            return Response({"detail": str(error)}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = serializers.QuestionSerializer(
             question, context={"request": request}, many=False
@@ -52,6 +63,23 @@ class QuestionViewSet(
     @action(detail=True, methods=("post",), url_path="validate-answer")
     def validate_answer(self, request, pk=None):
         question = self.get_object()
+
+        if question.kind == models.Question.Kind.NUMERIC:
+            serializer = serializers.NumericAnswerValidationSerializer(
+                data=request.data
+            )
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            value = serializer.validated_data["value"]
+            return Response(
+                {
+                    "is_correct": value == question.numeric_answer,
+                    "correct_value": question.numeric_answer,
+                    "difference": abs(value - question.numeric_answer),
+                }
+            )
+
         serializer = serializers.AnswerValidationSerializer(data=request.data)
 
         if not serializer.is_valid():

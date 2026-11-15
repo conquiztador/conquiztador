@@ -16,6 +16,10 @@ class AnswerValidationSerializer(serializers.Serializer):
     uuid = serializers.UUIDField()
 
 
+class NumericAnswerValidationSerializer(serializers.Serializer):
+    value = serializers.FloatField()
+
+
 class CategoryInlineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -35,6 +39,7 @@ class QuestionSerializer(serializers.HyperlinkedModelSerializer):
             "url",
             "uuid",
             "text",
+            "kind",
             "answers",
             "categories",
             "created_at",
