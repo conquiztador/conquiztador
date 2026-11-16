@@ -33,6 +33,7 @@ export class ConquestPage extends Page {
     private map: MapView;
     private hud: HudView;
     private overlay: BattleOverlay;
+    private quitButton: Button;
     private message = label("", 26, COLORS.text, {
         stroke: { color: 0x000000, width: 4 },
     });
@@ -45,18 +46,54 @@ export class ConquestPage extends Page {
         this.visible = false;
 
         this.message.anchor.set(0.5);
-        this.message.position.set(450, 50);
         this.addChild(this.message);
 
-        const quit = new Button("Quit", 120, 44, 20).onClick(() => this.quit());
-        quit.position.set(1190, 50);
-        this.addChild(quit);
+        this.quitButton = new Button("Quit", 120, 44, 20).onClick(() =>
+            this.quit()
+        );
+        this.addChild(this.quitButton);
 
         this.overlay = new BattleOverlay();
 
         this.app.stage.on(GameEvent.startMatch, (config: GameConfig) =>
             this.startMatch(config)
         );
+        this.layout();
+    }
+
+    /**
+     * Landscape: map on the left, HUD on the right.
+     * Portrait: map across the top, HUD underneath.
+     */
+    protected layout() {
+        const w = this.app.designWidth;
+        const h = this.app.designHeight;
+        this.quitButton.position.set(w - 90, 50);
+
+        if (this.app.isPortrait) {
+            this.message.position.set(w / 2, 120);
+            this.message.style.wordWrapWidth = w - 40;
+        } else {
+            this.message.position.set(450, 50);
+            this.message.style.wordWrapWidth = 820;
+        }
+        this.message.style.wordWrap = true;
+        this.message.style.align = "center";
+        if (!this.map) return;
+
+        if (this.app.isPortrait) {
+            const mapWidth = w - 30;
+            this.map.scale.set(mapWidth / this.map.mapWidth);
+            this.map.position.set(15, 165);
+            const hudTop = 165 + this.map.mapHeight * this.map.scale.y + 20;
+            this.hud.position.set(20, hudTop);
+            this.hud.resize(w - 40, h - hudTop - 30);
+        } else {
+            this.map.scale.set(1);
+            this.map.position.set(30, 110);
+            this.hud.position.set(910, 110);
+            this.hud.resize(340, 560);
+        }
     }
 
     private startMatch(config: GameConfig) {
@@ -69,7 +106,6 @@ export class ConquestPage extends Page {
         this.hud?.destroy({ children: true });
 
         this.map = new MapView(this.app.ticker, 1.1);
-        this.map.position.set(30, 110);
         this.map.setPlayerColors(this.colors);
         this.map.on(MapEvent.regionSelected, (r: RegionId) => {
             if (!this.regionWaiter) return;
@@ -78,9 +114,9 @@ export class ConquestPage extends Page {
         });
 
         this.hud = new HudView(this.colors);
-        this.hud.position.set(910, 110);
 
         this.addChild(this.map, this.hud);
+        this.layout();
         this.overlay.close();
 
         this.engine = new GameEngine(

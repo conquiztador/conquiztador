@@ -22,28 +22,29 @@ export class LobbyPage extends Page {
     private rounds = 5;
     private placement: PlacementMode = "draft";
 
+    private title: PIXI.Text;
+    private rows: { text: PIXI.Text; buttons: Button[] }[] = [];
+    private startButton: Button;
+    private backButton: Button;
+
     constructor(app: Application, layerManager: LayerManager) {
         super(app, layerManager);
         this.visible = false;
 
-        const title = label("New conquest", 44, COLORS.text, {
+        const title = (this.title = label("New conquest", 44, COLORS.text, {
             stroke: { color: 0x000000, width: 5 },
-        });
+        }));
         title.anchor.set(0.5);
-        title.position.set(this.app.center.x, 90);
         this.addChild(title);
 
-        let y = 200;
         this.addRow(
             "Opponents",
-            y,
             [1, 2, 3, 4].map((n) => ({ label: `${n}`, value: n })),
             () => this.opponents,
             (v) => (this.opponents = v)
         );
         this.addRow(
             "Bot difficulty",
-            (y += 100),
             [
                 { label: "Easy", value: Difficulty.Easy },
                 { label: "Medium", value: Difficulty.Medium },
@@ -54,7 +55,6 @@ export class LobbyPage extends Page {
         );
         this.addRow(
             "Rounds",
-            (y += 100),
             [
                 { label: "Short · 3", value: 3 },
                 { label: "Standard · 5", value: 5 },
@@ -65,7 +65,6 @@ export class LobbyPage extends Page {
         );
         this.addRow(
             "Starting capital",
-            (y += 100),
             [
                 { label: "Choose", value: "draft" as PlacementMode },
                 { label: "Random", value: "random" as PlacementMode },
@@ -77,30 +76,59 @@ export class LobbyPage extends Page {
         const start = new Button("Start", 260, 60, 26).onClick(() =>
             this.start()
         );
-        start.position.set(this.app.center.x + 150, 680);
         const back = new Button("Back", 260, 60, 26).onClick(() => {
             this.visible = false;
             this.app.stage.emit(ButtonEvent.exitButtonClicked);
         });
-        back.position.set(this.app.center.x - 150, 680);
+        this.startButton = start;
+        this.backButton = back;
         this.addChild(start, back);
 
         this.app.stage.on(
             ButtonEvent.newGameButtonClicked,
             () => (this.visible = true)
         );
+        this.layout();
+    }
+
+    protected layout() {
+        const { x } = this.app.center;
+        const portrait = this.app.isPortrait;
+        this.title.position.set(x, portrait ? 120 : 90);
+
+        // Landscape: label left of the option buttons, one row per setting.
+        // Portrait: label centred above its buttons.
+        this.rows.forEach(({ text, buttons }, i) => {
+            if (portrait) {
+                const y = 210 + i * 170;
+                text.anchor.set(0.5);
+                text.position.set(x, y);
+                buttons.forEach((b, j) =>
+                    b.position.set(
+                        x + (j - (buttons.length - 1) / 2) * 172,
+                        y + 62
+                    )
+                );
+            } else {
+                const y = 200 + i * 100;
+                text.anchor.set(1, 0.5);
+                text.position.set(380, y);
+                buttons.forEach((b, j) => b.position.set(510 + j * 175, y));
+            }
+        });
+
+        const buttonsY = this.app.designHeight - 88;
+        this.backButton.position.set(x - 150, buttonsY);
+        this.startButton.position.set(x + 150, buttonsY);
     }
 
     private addRow<T>(
         title: string,
-        y: number,
         options: Option<T>[],
         get: () => T,
         set: (value: T) => void
     ) {
         const text = label(title, 24, COLORS.mutedText);
-        text.anchor.set(1, 0.5);
-        text.position.set(380, y);
         this.addChild(text);
 
         const buttons: Button[] = [];
@@ -108,16 +136,16 @@ export class LobbyPage extends Page {
             buttons.forEach(
                 (b, i) => (b.selected = options[i].value === get())
             );
-        options.forEach((o, i) => {
-            const b = new Button(o.label, 180, 56, 22).onClick(() => {
+        options.forEach((o) => {
+            const b = new Button(o.label, 160, 56, 22).onClick(() => {
                 set(o.value);
                 refresh();
             });
-            b.position.set(510 + i * 195, y);
             buttons.push(b);
             this.addChild(b as PIXI.Container);
         });
         refresh();
+        this.rows.push({ text, buttons });
     }
 
     private start() {

@@ -1,27 +1,49 @@
 import * as PIXI from "pixi.js";
 
-/** The fixed resolution the game is designed for. */
-export const DESIGN_WIDTH = 1280;
-export const DESIGN_HEIGHT = 768;
+export type Orientation = "landscape" | "portrait";
+
+/** The fixed resolutions the game is designed for, one per orientation. */
+export const DESIGN_SIZES: Record<
+    Orientation,
+    { width: number; height: number }
+> = {
+    landscape: { width: 1280, height: 768 },
+    portrait: { width: 720, height: 1280 },
+};
+
+export const AppEvent = {
+    /** Emitted on the stage when the orientation (design size) changes. */
+    layout: "layout",
+} as const;
 
 export default class Application extends PIXI.Application {
     /**
      * DOM layer above the canvas, sized to the design area and scaled with
-     * the stage, so HTML UI can use the same 1280×768 coordinates.
+     * the stage, so HTML UI can use the same coordinates as the stage.
      */
     public readonly uiRoot: HTMLDivElement = document.createElement("div");
 
-    /** Center of the design area, in stage coordinates. */
-    public get center(): PIXI.Point {
-        return new PIXI.Point(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
+    private _orientation: Orientation = "landscape";
+
+    public get orientation(): Orientation {
+        return this._orientation;
+    }
+
+    public get isPortrait(): boolean {
+        return this._orientation === "portrait";
     }
 
     public get designWidth(): number {
-        return DESIGN_WIDTH;
+        return DESIGN_SIZES[this._orientation].width;
     }
 
     public get designHeight(): number {
-        return DESIGN_HEIGHT;
+        return DESIGN_SIZES[this._orientation].height;
+    }
+
+    /** Center of the design area, in stage coordinates. */
+    public get center(): PIXI.Point {
+        return new PIXI.Point(this.designWidth / 2, this.designHeight / 2);
     }
 
     /**
@@ -42,8 +64,6 @@ export default class Application extends PIXI.Application {
         document.body.appendChild(this.canvas);
 
         this.uiRoot.id = "ui-root";
-        this.uiRoot.style.width = `${DESIGN_WIDTH}px`;
-        this.uiRoot.style.height = `${DESIGN_HEIGHT}px`;
         document.body.appendChild(this.uiRoot);
 
         this.fitStage();
@@ -51,19 +71,37 @@ export default class Application extends PIXI.Application {
     }
 
     /**
-     * Scales the stage so the design area fits the window while keeping
-     * its aspect ratio, and centers it (letterboxing the remainder).
+     * Picks the orientation whose design area fits the window at the larger
+     * scale, then scales and centers the stage (letterboxing the remainder).
      */
     private fitStage(): void {
         const width = window.innerWidth;
         const height = window.innerHeight;
-        const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+        const scaleFor = (o: Orientation) =>
+            Math.min(
+                width / DESIGN_SIZES[o].width,
+                height / DESIGN_SIZES[o].height
+            );
+        const orientation: Orientation =
+            scaleFor("portrait") > scaleFor("landscape")
+                ? "portrait"
+                : "landscape";
+        const changed = orientation !== this._orientation;
+        this._orientation = orientation;
 
-        const x = (width - DESIGN_WIDTH * scale) / 2;
-        const y = (height - DESIGN_HEIGHT * scale) / 2;
+        const scale = scaleFor(orientation);
+        const x = (width - this.designWidth * scale) / 2;
+        const y = (height - this.designHeight * scale) / 2;
 
         this.stage.scale.set(scale);
         this.stage.position.set(x, y);
-        this.uiRoot.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+
+        const ui = this.uiRoot.style;
+        ui.width = `${this.designWidth}px`;
+        ui.height = `${this.designHeight}px`;
+        ui.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+        this.uiRoot.dataset.orientation = orientation;
+
+        if (changed) this.stage.emit(AppEvent.layout, orientation);
     }
 }

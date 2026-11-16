@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 
-import Application from "../Application";
+import Application, { AppEvent } from "../Application";
 import LayerManager from "app/managers/LayerManager";
 
 export class Page extends PIXI.Container {
@@ -19,6 +19,15 @@ export class Page extends PIXI.Container {
         window.addEventListener("resize", () => {
             this.redraw();
         });
+        this.app.stage.on(AppEvent.layout, () => this.layout());
+    }
+
+    /**
+     * Positions the page's content for the current design size. Subclasses
+     * call it once they're built; it re-runs whenever the orientation changes.
+     */
+    protected layout(): void {
+        // Nothing to place by default.
     }
 
     protected addBackground(): void {
