@@ -33,6 +33,11 @@ export default defineConfig(({ mode }) => ({
         // IPs and localhost are always allowed; named hosts must be listed.
         allowedHosts: [HOST],
         open: `http://${HOST}/`,
+        // Forward API calls to Django, so devices hitting Vite directly
+        // (http://<lan-ip>:8080) reach the backend too.
+        proxy: {
+            "/api": "http://127.0.0.1:8000",
+        },
         // No HMR host/port override: the client reconnects to whichever
         // host served the page (nginx proxies the WebSocket upgrade).
     },

@@ -1,5 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 
+import { useMessages } from "app/i18n";
+
 const subscribe = (fn: () => void) => {
     document.addEventListener("fullscreenchange", fn);
     return () => document.removeEventListener("fullscreenchange", fn);
@@ -23,6 +25,7 @@ function toggleFullscreen() {
  */
 export function FullscreenButton() {
     const fullscreen = useSyncExternalStore(subscribe, isFullscreen);
+    const m = useMessages().controls;
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -40,8 +43,8 @@ export function FullscreenButton() {
     return (
         <button
             className="corner-button"
-            title={fullscreen ? "Exit fullscreen (F)" : "Fullscreen (F)"}
-            aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+            title={`${fullscreen ? m.exitFullscreen : m.fullscreen} (F)`}
+            aria-label={fullscreen ? m.exitFullscreen : m.fullscreen}
             onClick={toggleFullscreen}
         >
             <svg

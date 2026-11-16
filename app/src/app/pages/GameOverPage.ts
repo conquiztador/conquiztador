@@ -8,6 +8,7 @@ import { territoriesOf } from "app/core/territory";
 import { GameState } from "app/core/types";
 import { Button, COLORS, label } from "app/game/ui";
 import { sfx } from "app/audio/sfx";
+import { playerName, t } from "app/i18n";
 
 /** Final standings after a match. */
 export class GameOverPage extends Page {
@@ -21,11 +22,11 @@ export class GameOverPage extends Page {
         this.visible = false;
         this.addChild(this.content);
 
-        const menu = new Button("Main menu", 260, 60, 24).onClick(() => {
+        const menu = new Button("", 260, 60, 24).onClick(() => {
             this.visible = false;
             this.app.stage.emit(ButtonEvent.exitButtonClicked);
         });
-        const again = new Button("Play again", 260, 60, 24).onClick(() => {
+        const again = new Button("", 260, 60, 24).onClick(() => {
             this.visible = false;
             this.app.stage.emit(ButtonEvent.newGameButtonClicked);
         });
@@ -36,7 +37,15 @@ export class GameOverPage extends Page {
         this.app.stage.on(GameEvent.matchFinished, (s: GameState) =>
             this.show(s)
         );
+        this.relabel();
         this.layout();
+    }
+
+    protected relabel() {
+        const m = t().gameOver;
+        this.menuButton.label = m.mainMenu;
+        this.againButton.label = m.playAgain;
+        if (this.state) this.renderStandings(this.state);
     }
 
     protected layout() {
@@ -56,6 +65,7 @@ export class GameOverPage extends Page {
     }
 
     private renderStandings(state: GameState) {
+        const m = t().gameOver;
         const top = this.app.isPortrait ? 220 : 130;
         this.content
             .removeChildren()
@@ -67,16 +77,16 @@ export class GameOverPage extends Page {
 
         const title =
             winners.length > 1
-                ? "It's a draw!"
+                ? m.draw
                 : youWon
-                ? "Victory!"
-                : `${winners[0]?.name ?? "Nobody"} wins`;
-        const t = label(title, 60, youWon ? COLORS.gold : COLORS.text, {
+                ? m.victory
+                : m.wins(winners[0] ? playerName(winners[0]) : m.nobody);
+        const heading = label(title, 60, youWon ? COLORS.gold : COLORS.text, {
             stroke: { color: 0x000000, width: 6 },
         });
-        t.anchor.set(0.5);
-        t.position.set(this.app.center.x, top);
-        this.content.addChild(t);
+        heading.anchor.set(0.5);
+        heading.position.set(this.app.center.x, top);
+        this.content.addChild(heading);
 
         const ranked = [...state.players]
             .map((p) => ({
@@ -87,10 +97,8 @@ export class GameOverPage extends Page {
 
         ranked.forEach(({ p, count }, i) => {
             const row = label(
-                `${i + 1}.  ${p.name}  —  ${
-                    p.eliminated
-                        ? "eliminated"
-                        : `${count} region${count === 1 ? "" : "s"}`
+                `${i + 1}.  ${playerName(p)}  —  ${
+                    p.eliminated ? m.eliminated : m.regions(count)
                 }`,
                 30,
                 state.winners.includes(p.id) ? COLORS.gold : COLORS.text

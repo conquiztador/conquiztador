@@ -20,9 +20,11 @@ class TestMixin:
         categories=None,
         kind=Question.Kind.MULTIPLE_CHOICE,
         numeric_answer=None,
+        language="en",
     ):
         question = Question.objects.create(
             text=text,
+            language=language,
             author=author or self.user,
             kind=kind,
             numeric_answer=numeric_answer,
@@ -44,7 +46,8 @@ class TestMixin:
             author=author or self.user,
         )
 
-    def create_category(self, name="Category name"):
+    def create_category(self, name="Category name", language="en"):
         return Category.objects.create(
             name=name,
+            language=language,
         )

@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 
 import Application, { AppEvent } from "../Application";
 import LayerManager from "app/managers/LayerManager";
+import { onLanguageChange } from "app/i18n";
 
 export class Page extends PIXI.Container {
     protected background: PIXI.Sprite;
@@ -20,6 +21,15 @@ export class Page extends PIXI.Container {
             this.redraw();
         });
         this.app.stage.on(AppEvent.layout, () => this.layout());
+        onLanguageChange(() => this.relabel());
+    }
+
+    /**
+     * Sets the page's text in the current language. Subclasses call it once
+     * they're built; it re-runs whenever the language changes.
+     */
+    protected relabel(): void {
+        // No text by default.
     }
 
     /**

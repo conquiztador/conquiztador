@@ -5,6 +5,7 @@ import { ButtonEvent } from "../Events";
 import { Page } from "shared/Page";
 import { Button, COLORS, label } from "app/game/ui";
 import LayerManager from "app/managers/LayerManager";
+import { t } from "app/i18n";
 
 export class MenuPage extends Page {
     private _newGameButton: Button;
@@ -16,21 +17,26 @@ export class MenuPage extends Page {
 
         this.visible = true;
 
-        const title = (this.title = label("Conquiztador", 72, COLORS.gold, {
+        const title = (this.title = label("", 72, COLORS.gold, {
             stroke: { color: 0x000000, width: 8 },
         }));
         title.anchor.set(0.5);
-        const subtitle = (this.subtitle = label(
-            "Conquer Bulgaria, one question at a time",
-            24
-        ));
+        const subtitle = (this.subtitle = label("", 24));
         subtitle.anchor.set(0.5);
         this.addChild(title, subtitle);
 
         this.addNewGamesButton();
 
         this.attachListeners();
+        this.relabel();
         this.layout();
+    }
+
+    protected relabel() {
+        const m = t().menu;
+        this.title.text = m.title;
+        this.subtitle.text = m.tagline;
+        this._newGameButton.label = m.newGame;
     }
 
     protected layout() {
@@ -41,7 +47,7 @@ export class MenuPage extends Page {
     }
 
     private addNewGamesButton() {
-        this._newGameButton = new Button("New game", 300, 60, 26);
+        this._newGameButton = new Button("", 300, 60, 26);
 
         this.addChild(this._newGameButton);
     }

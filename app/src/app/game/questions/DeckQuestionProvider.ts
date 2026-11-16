@@ -1,27 +1,24 @@
 import { QuestionProvider } from "app/core/GameEngine";
 import { Rng, shuffle } from "app/core/rng";
 import { McqQuestion, NumericQuestion } from "app/core/types";
-
-import { LOCAL_MCQ, LOCAL_NUMERIC } from "./localQuestions";
+import { QuestionDeck } from "app/services/QuestionDeckService";
 
 /**
- * Serves questions from the bundled set, shuffling options and avoiding
- * repeats until the deck runs out. Stand-in until the game talks to the
- * backend (which now supports numeric questions too).
+ * Serves a match's pre-loaded questions, shuffling options and avoiding
+ * repeats until the deck runs out (then reshuffling).
  */
-export class LocalQuestionProvider implements QuestionProvider {
+export class DeckQuestionProvider implements QuestionProvider {
     private mcqDeck: McqQuestion[] = [];
     private numericDeck: NumericQuestion[] = [];
 
     constructor(
-        private readonly rng: Rng = Math.random,
-        private readonly mcq: McqQuestion[] = LOCAL_MCQ,
-        private readonly numeric: NumericQuestion[] = LOCAL_NUMERIC
+        private readonly deck: QuestionDeck,
+        private readonly rng: Rng = Math.random
     ) {}
 
     nextMcq(): McqQuestion {
         if (this.mcqDeck.length === 0)
-            this.mcqDeck = shuffle(this.rng, this.mcq);
+            this.mcqDeck = shuffle(this.rng, this.deck.mcq);
         const q = this.mcqDeck.pop();
         const order = shuffle(
             this.rng,
@@ -35,9 +32,8 @@ export class LocalQuestionProvider implements QuestionProvider {
     }
 
     nextNumeric(): NumericQuestion {
-        if (this.numericDeck.length === 0) {
-            this.numericDeck = shuffle(this.rng, this.numeric);
-        }
+        if (this.numericDeck.length === 0)
+            this.numericDeck = shuffle(this.rng, this.deck.numeric);
         return { ...this.numericDeck.pop() };
     }
 }

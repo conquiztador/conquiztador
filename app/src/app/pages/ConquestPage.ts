@@ -17,17 +17,22 @@ import {
 import { BattleOverlay, Combatant } from "app/game/components/BattleOverlay";
 import { HUD, matchHud } from "app/game/components/MatchHud";
 import { MapEvent, MapView } from "app/game/components/MapView";
-import { LocalQuestionProvider } from "app/game/questions/LocalQuestionProvider";
+import { DeckQuestionProvider } from "app/game/questions/DeckQuestionProvider";
+import { QuestionDeck } from "app/services/QuestionDeckService";
+import { Messages, onLanguageChange, playerName, who } from "app/i18n";
 import { COLORS, PLAYER_COLORS, wait } from "app/game/ui";
 import { territoriesOf } from "app/core/territory";
 import { sfx } from "app/audio/sfx";
 
 const NEUTRAL: Combatant = {
-    name: "Neutral",
+    id: null,
+    name: "",
     color: COLORS.neutral,
     isHuman: false,
 };
 const HUMAN_ID = "you";
+/** Status text, re-read from the dictionary when the language changes. */
+type Text = (m: Messages) => string;
 /** Map labels never render smaller than this many CSS pixels. */
 const MIN_LABEL_PX = 9;
 const MAP_LABEL_FONT = 11;
@@ -50,14 +55,19 @@ export class ConquestPage extends Page {
         matchHud.set((s) => ({ ...s, onQuit: () => this.quit() }));
         this.overlay = new BattleOverlay();
 
-        this.app.stage.on(GameEvent.startMatch, (config: GameConfig) =>
-            this.startMatch(config)
+        this.app.stage.on(
+            GameEvent.startMatch,
+            (config: GameConfig, deck: QuestionDeck) =>
+                this.startMatch(config, deck)
         );
+        // Region labels on the map; HUD and battle card are React and
+        // re-render on their own.
+        onLanguageChange(() => this.engine && this.refresh());
         this.layout();
     }
 
     /** Status line shown in the HUD. */
-    private set status(text: string) {
+    private set status(text: Text) {
         matchHud.set((s) => ({ ...s, message: text }));
     }
 
@@ -123,7 +133,7 @@ export class ConquestPage extends Page {
         );
     }
 
-    private startMatch(config: GameConfig) {
+    private startMatch(config: GameConfig, deck: QuestionDeck) {
         const id = ++this.matchId;
         this.revealed.clear();
         this.colors = Object.fromEntries(
@@ -146,11 +156,11 @@ export class ConquestPage extends Page {
         this.engine = new GameEngine(
             config,
             BULGARIA,
-            new LocalQuestionProvider()
+            new DeckQuestionProvider(deck)
         );
         this.engine.start();
         this.layout();
-        this.status = "";
+        this.status = () => "";
         matchHud.set((s) => ({ ...s, visible: true }));
         this.visible = true;
         this.run(id).catch((e) => console.error(e));
@@ -217,13 +227,13 @@ export class ConquestPage extends Page {
             );
             if (!capital) continue;
             const player = s.players.find((p) => p.id === playerId);
-            const regionName = BULGARIA.regions[capital.regionId].name;
+            const region = capital.regionId;
 
             if (player.kind === "bot" || s.config.placement === "random") {
-                this.status =
+                this.status = (m) =>
                     playerId === HUMAN_ID
-                        ? "Selecting your capital…"
-                        : `${player.name} is selecting a capital…`;
+                        ? m.status.selectingYourCapital
+                        : m.status.selectingCapital(playerName(player));
                 this.refresh(playerId);
                 await wait(1100);
                 if (!alive()) return;
@@ -240,26 +250,27 @@ export class ConquestPage extends Page {
                 }
             );
             if (!alive()) return;
-            this.status =
+            this.status = (m) =>
                 playerId === HUMAN_ID
-                    ? `Your capital: ${regionName}`
-                    : `${player.name} chose ${regionName}`;
+                    ? m.status.yourCapital(m.regions[region])
+                    : m.status.choseCapital(
+                          playerName(player),
+                          m.regions[region]
+                      );
             await wait(700);
             if (!alive()) return;
         }
     }
 
-    private playerName(id: PlayerId | null) {
-        if (id === null) return "Neutral";
-        return id === HUMAN_ID
-            ? "You"
-            : this.engine.getState().players.find((p) => p.id === id).name;
+    private player(id: PlayerId) {
+        return this.engine.getState().players.find((p) => p.id === id);
     }
 
     private combatant(id: PlayerId | null): Combatant {
         if (id === null) return NEUTRAL;
         return {
-            name: this.playerName(id),
+            id,
+            name: this.player(id).name,
             color: this.colors[id],
             isHuman: id === HUMAN_ID,
         };
@@ -301,10 +312,10 @@ export class ConquestPage extends Page {
                     break;
                 case GamePhase.RoundEnd: {
                     const s = this.engine.getState();
-                    this.status =
+                    this.status = (m) =>
                         s.round >= s.config.rounds
-                            ? "Final round complete!"
-                            : `Round ${s.round} complete`;
+                            ? m.status.finalRoundComplete
+                            : m.status.roundComplete(s.round);
                     await wait(1400);
                     this.engine.continue();
                     break;
@@ -315,7 +326,7 @@ export class ConquestPage extends Page {
         }
         if (!alive()) return;
         this.refresh();
-        this.status = "Game over";
+        this.status = (m) => m.status.gameOver;
         await wait(1200);
         if (!alive()) return;
         this.visible = false;
@@ -324,7 +335,7 @@ export class ConquestPage extends Page {
     }
 
     private async capitalSelection() {
-        this.status = "Choose your capital";
+        this.status = (m) => m.status.chooseCapital;
         const region = await this.waitForRegion(
             this.engine.capitalCandidates()
         );
@@ -337,10 +348,10 @@ export class ConquestPage extends Page {
         let target: RegionId;
 
         if (player.kind === "human") {
-            this.status = "Your turn — choose a region to attack";
+            this.status = (m) => m.status.yourTurn;
             target = await this.waitForRegion(targets);
         } else {
-            this.status = `${player.name} is choosing a target…`;
+            this.status = (m) => m.status.choosingTarget(playerName(player));
             await wait(700);
             target = botChooseTarget(
                 Math.random,
@@ -349,7 +360,8 @@ export class ConquestPage extends Page {
                 player.difficulty ?? Difficulty.Medium
             );
             this.map.setFocus(target);
-            this.status = `${player.name} attacks ${BULGARIA.regions[target].name}!`;
+            this.status = (m) =>
+                m.status.attacks(who(player), m.regions[target]);
             await wait(900);
         }
         this.map.setFocus(target);
@@ -374,7 +386,7 @@ export class ConquestPage extends Page {
         await this.overlay.open({
             attacker,
             defender,
-            targetName: BULGARIA.regions[first.targetId].name,
+            targetId: first.targetId,
             isCapital: target.isCapital,
             capitalHp: target.hp,
             chainIndex: first.chainIndex,
@@ -382,8 +394,8 @@ export class ConquestPage extends Page {
         });
 
         if (first.chainIndex > 1) {
-            await this.overlay.announce(
-                `Siege continues!\nBattle ${first.chainIndex} for the capital`
+            await this.overlay.announce((m) =>
+                m.status.siegeContinues(first.chainIndex)
             );
         }
 
@@ -411,7 +423,7 @@ export class ConquestPage extends Page {
         // Phase 2
         if (this.engine.getState().battle.numeric) {
             await this.overlay.announce(
-                "Both correct!\nTie-breaker…",
+                (m) => m.status.tieBreaker,
                 COLORS.highlight,
                 800
             );
@@ -439,14 +451,17 @@ export class ConquestPage extends Page {
         // Resolution
         s = this.engine.getState();
         const r = s.battle.result;
-        const regionName = BULGARIA.regions[s.battle.targetId].name;
+        const region = s.battle.targetId;
+        /** Who a combatant is, in the current language (neutral included). */
+        const whoIs = (c: Combatant, m: Messages) =>
+            c.id === null
+                ? { name: m.players.neutral, you: false }
+                : who({ id: c.id, name: c.name });
         this.refresh();
-        let text: string;
+        let text: Text;
         let color: number = COLORS.gold;
         if (r.winner === "defender") {
-            text = `${defender.name} ${
-                defender.name === "You" ? "hold" : "holds"
-            } ${regionName}!`;
+            text = (m) => m.status.holds(whoIs(defender, m), m.regions[region]);
             color =
                 humanSide === "defender"
                     ? COLORS.correct
@@ -454,13 +469,11 @@ export class ConquestPage extends Page {
                     ? COLORS.wrong
                     : COLORS.text;
         } else if (r.eliminatedPlayerId) {
-            text = `Capital captured!\n${this.playerName(
-                r.eliminatedPlayerId
-            )} ${r.eliminatedPlayerId === HUMAN_ID ? "are" : "is"} eliminated`;
+            const eliminated = this.player(r.eliminatedPlayerId);
+            text = (m) => m.status.capitalCaptured(who(eliminated));
         } else if (r.captured) {
-            text = `${attacker.name} ${
-                attacker.name === "You" ? "conquer" : "conquers"
-            } ${regionName}!`;
+            text = (m) =>
+                m.status.conquers(whoIs(attacker, m), m.regions[region]);
             color =
                 humanSide === "attacker"
                     ? COLORS.correct
@@ -468,11 +481,10 @@ export class ConquestPage extends Page {
                     ? COLORS.wrong
                     : COLORS.text;
         } else if (r.wallBroken) {
-            text = "The wall is breached!";
+            text = (m) => m.status.wallBreached;
         } else {
-            text = `Capital hit! ${r.targetHpAfter} shield${
-                r.targetHpAfter === 1 ? "" : "s"
-            } left`;
+            const hp = r.targetHpAfter;
+            text = (m) => m.status.capitalHit(hp);
         }
         if (color === COLORS.correct) sfx.conquer();
         else if (color === COLORS.wrong) sfx.defeat();

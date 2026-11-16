@@ -1,6 +1,7 @@
 import { CSSProperties, useEffect, useState } from "react";
 
 import { Side } from "app/core/types";
+import { formatNumber, Messages, playerName, useMessages } from "app/i18n";
 import { css } from "app/ui/store";
 
 import { COLORS } from "../ui";
@@ -13,7 +14,12 @@ import {
 import "./BattleOverlay.css";
 
 const SIDES: Side[] = ["attacker", "defender"];
-const fmt = (n: number) => n.toLocaleString("en-US");
+const fmt = (n: number, options?: Intl.NumberFormatOptions) =>
+    formatNumber(n, options);
+
+/** A combatant's display name in the current language. */
+const nameOf = (c: Combatant, m: Messages) =>
+    c.id === null ? m.players.neutral : playerName({ id: c.id, name: c.name });
 
 export function BattleOverlayView() {
     const { info, step, seq, onAnswer } = battleStore.use();
@@ -21,7 +27,7 @@ export function BattleOverlayView() {
 
     return (
         <div className="battle-dim">
-            <div className="battle-box" key={info.targetName}>
+            <div className="battle-box" key={info.targetId}>
                 <Header info={info} />
                 <div className="battle-body" key={seq}>
                     <Step info={info} step={step} onAnswer={onAnswer} />
@@ -31,14 +37,24 @@ export function BattleOverlayView() {
     );
 }
 
-function Step({
+function Step(props: {
+    info: BattleInfo;
+    step: BattleStep;
+    onAnswer: ((v: number) => void) | null;
+}) {
+    return <StepInner {...props} m={useMessages()} />;
+}
+
+function StepInner({
     info,
     step,
     onAnswer,
+    m,
 }: {
     info: BattleInfo;
     step: BattleStep;
     onAnswer: ((v: number) => void) | null;
+    m: Messages;
 }) {
     switch (step.kind) {
         case "header":
@@ -49,7 +65,7 @@ function Step({
                     className="battle-announce"
                     style={{ color: css(step.color) }}
                 >
-                    {step.text}
+                    {step.text(m)}
                 </div>
             );
         case "mcq":
@@ -62,30 +78,29 @@ function Step({
 }
 
 function Header({ info }: { info: BattleInfo }) {
+    const m = useMessages();
     const {
         attacker,
         defender,
-        targetName,
+        targetId,
         isCapital,
         capitalHp,
         chainIndex,
         walled,
     } = info;
-    let sub = `Battle for ${targetName}`;
+    let sub = m.battle.battleFor(m.regions[targetId]);
     if (isCapital)
-        sub += `  ·  Capital siege — battle ${chainIndex}, ${capitalHp} shield${
-            capitalHp === 1 ? "" : "s"
-        } left`;
-    if (walled) sub += "  ·  Walled";
+        sub += `  ·  ${m.battle.capitalSiege(chainIndex, capitalHp)}`;
+    if (walled) sub += `  ·  ${m.battle.walled}`;
     return (
         <header className="battle-header">
             <div className="battle-versus">
                 <span style={{ color: css(attacker.color) }}>
-                    {attacker.name}
+                    {nameOf(attacker, m)}
                 </span>
                 <span>⚔</span>
                 <span style={{ color: css(defender.color) }}>
-                    {defender.name}
+                    {nameOf(defender, m)}
                 </span>
             </div>
             <div
@@ -131,6 +146,7 @@ function Mcq({
     step: Of<"mcq">;
     onAnswer: ((v: number) => void) | null;
 }) {
+    const m = useMessages();
     const { question, picked, reveal } = step;
 
     useEffect(() => {
@@ -151,7 +167,7 @@ function Mcq({
             <Question
                 text={question.text}
                 category={question.category}
-                phase="Phase 1 · Multiple choice"
+                phase={m.battle.phaseMcq}
             />
             {!reveal && <Timer info={info} step={step} />}
             <div className="mcq-grid">
@@ -187,11 +203,11 @@ function Mcq({
                         const idx = reveal.answers[s]?.optionIndex;
                         const result =
                             idx === null || idx === undefined
-                                ? "No answer"
+                                ? m.battle.noAnswer
                                 : idx === reveal.correctIndex
-                                ? "Correct"
-                                : "Wrong";
-                        return `${info[s].name}: ${result}`;
+                                ? m.battle.correct
+                                : m.battle.wrong;
+                        return `${nameOf(info[s], m)}: ${result}`;
                     }).join("    ·    ")}
                 </div>
             )}
@@ -216,6 +232,7 @@ function Numeric({
     step: Of<"numeric">;
     onAnswer: ((v: number) => void) | null;
 }) {
+    const m = useMessages();
     const [value, setValue] = useState("");
 
     const press = (key: string) => {
@@ -242,18 +259,14 @@ function Numeric({
         return () => window.removeEventListener("keydown", onKey);
     });
 
-    const display = value
-        ? Number(value).toLocaleString("en-US")
-        : step.spectating
-        ? "…"
-        : "";
+    const display = value ? fmt(Number(value)) : step.spectating ? "…" : "";
 
     return (
         <>
             <Question
                 text={step.question.text}
                 category={step.question.category}
-                phase="Phase 2 · Tie-breaker: closest answer wins, then fastest"
+                phase={m.battle.phaseNumeric}
             />
             <Timer info={info} step={step} />
             <div className="numeric-entry">
@@ -262,7 +275,7 @@ function Numeric({
                         className={`numeric-display${value ? "" : " empty"}`}
                         aria-live="polite"
                     >
-                        {display || "Your answer"}
+                        {display || m.battle.yourAnswer}
                     </div>
                     <button
                         className="battle-button numeric-submit"
@@ -280,7 +293,7 @@ function Numeric({
                         disabled={!onAnswer || value === ""}
                         onClick={() => press("OK")}
                     >
-                        {step.submitted ? "Locked in" : "Submit"}
+                        {step.submitted ? m.battle.lockedIn : m.battle.submit}
                     </button>
                 </div>
                 <div className="numeric-pad">
@@ -302,7 +315,11 @@ function Numeric({
                             disabled={!onAnswer || (k === "OK" && !value)}
                             onClick={() => press(k)}
                             aria-label={
-                                k === "⌫" ? "Delete" : k === "OK" ? "Submit" : k
+                                k === "⌫"
+                                    ? m.battle.delete
+                                    : k === "OK"
+                                    ? m.battle.submit
+                                    : k
                             }
                         >
                             {k}
@@ -321,11 +338,12 @@ function NumericReveal({
     info: BattleInfo;
     step: Of<"numericReveal">;
 }) {
+    const m = useMessages();
     const { correctValue, answers, winner } = step;
     return (
         <>
             <div className="numeric-correct">
-                Correct answer: {fmt(correctValue)}
+                {m.battle.correctAnswer(fmt(correctValue))}
             </div>
             {SIDES.map((side) => {
                 const who = info[side];
@@ -344,20 +362,23 @@ function NumericReveal({
                         <Chip who={who} />
                         <div className="numeric-row-text">
                             <div style={{ color: css(who.color) }}>
-                                {who.name}
+                                {nameOf(who, m)}
                             </div>
                             <div className="muted">
                                 {has
-                                    ? `Answer ${fmt(a.value)}  ·  off by ${fmt(
-                                          Math.abs(a.value - correctValue)
-                                      )}  ·  ${(
-                                          a.responseTimeMs / 1000
-                                      ).toFixed(1)}s`
-                                    : "No answer"}
+                                    ? m.battle.answerDetail(
+                                          fmt(a.value),
+                                          fmt(Math.abs(a.value - correctValue)),
+                                          fmt(a.responseTimeMs / 1000, {
+                                              minimumFractionDigits: 1,
+                                              maximumFractionDigits: 1,
+                                          })
+                                      )
+                                    : m.battle.noAnswer}
                             </div>
                         </div>
                         {side === winner && (
-                            <div className="numeric-win">WINS</div>
+                            <div className="numeric-win">{m.battle.wins}</div>
                         )}
                     </div>
                 );
@@ -374,6 +395,7 @@ function Timer({
     info: BattleInfo;
     step: Of<"mcq"> | Of<"numeric">;
 }) {
+    const m = useMessages();
     const elapsed = useElapsed(step.startedAt);
     const left = Math.max(0, 1 - elapsed / step.limitMs);
     const secs = Math.ceil((step.limitMs - elapsed) / 1000);
@@ -395,10 +417,11 @@ function Timer({
             </div>
             <div className="battle-status muted">
                 {step.spectating
-                    ? `${info.attacker.name} and ${info.defender.name} are answering…`
-                    : `${Math.max(0, secs)}s left  ·  Opponent ${
-                          opponentDone ? "has answered" : "is thinking…"
-                      }`}
+                    ? m.battle.bothAnswering(
+                          nameOf(info.attacker, m),
+                          nameOf(info.defender, m)
+                      )
+                    : m.battle.timeLeft(Math.max(0, secs), opponentDone)}
             </div>
         </>
     );
@@ -417,9 +440,10 @@ function useElapsed(since: number): number {
 }
 
 function Chip({ who }: { who: Combatant }) {
+    const m = useMessages();
     return (
         <span className="chip" style={{ background: css(who.color) }}>
-            {who.name[0].toUpperCase()}
+            {nameOf(who, m)[0].toUpperCase()}
         </span>
     );
 }

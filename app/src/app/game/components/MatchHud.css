@@ -48,8 +48,8 @@
     /* same height as the corner buttons so Quit centres on the same line */
     min-height: 36px;
     gap: 8px;
-    /* leave room for the corner controls (fullscreen + mute) */
-    padding-right: 88px;
+    /* leave room for the corner controls (language, fullscreen, mute) */
+    padding-right: 132px;
 }
 .hud-round {
     flex: 1;
@@ -143,4 +143,14 @@
 .hud-hp {
     color: #d64545;
     letter-spacing: -1px;
+}
+
+/* Side column: Quit sits at the bottom, full width. */
+.hud-footer {
+    margin-top: auto;
+    display: flex;
+}
+.hud-footer .hud-quit {
+    flex: 1;
+    padding: 8px 12px;
 }

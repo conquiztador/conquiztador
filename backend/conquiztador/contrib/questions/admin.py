@@ -9,8 +9,8 @@ class AnswerInline(admin.TabularInline):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_filter = ("kind", "author", "created_at", "updated_at")
-    list_display = ("text", "kind", "author", "created_at", "updated_at")
+    list_filter = ("language", "kind", "author", "created_at", "updated_at")
+    list_display = ("text", "language", "kind", "author", "created_at", "updated_at")
     list_per_page = 15
     date_hierarchy = "created_at"
     search_fields = ("text", "author")
@@ -21,6 +21,7 @@ class QuestionAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("name", "created_at", "updated_at")
+    list_filter = ("language",)
+    list_display = ("name", "language", "created_at", "updated_at")
     list_per_page = 15
     search_fields = ("name",)

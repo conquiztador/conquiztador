@@ -1,10 +1,12 @@
 import { useEffect, useSyncExternalStore } from "react";
 
 import { isMuted, onMuteChange, setMuted } from "app/audio/sfx";
+import { useMessages } from "app/i18n";
 
 /** Speaker toggle in the corner controls; "M" toggles it too. */
 export function MuteButton() {
     const muted = useSyncExternalStore(onMuteChange, isMuted);
+    const m = useMessages().controls;
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -19,8 +21,8 @@ export function MuteButton() {
     return (
         <button
             className="corner-button"
-            title={muted ? "Unmute (M)" : "Mute (M)"}
-            aria-label={muted ? "Unmute" : "Mute"}
+            title={`${muted ? m.unmute : m.mute} (M)`}
+            aria-label={muted ? m.unmute : m.mute}
             onClick={() => setMuted(!muted)}
         >
             <svg

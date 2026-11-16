@@ -1,3 +1,4 @@
+import { playerName, useMessages } from "app/i18n";
 import { css } from "app/ui/store";
 
 import { COLORS } from "../ui";
@@ -15,15 +16,21 @@ export function MatchHudView() {
         layout,
         onQuit,
     } = matchHud.use();
+    const m = useMessages();
     if (!visible) return null;
 
-    const roundLabel = `Round ${Math.max(1, round)}/${rounds}`;
+    const roundLabel = m.hud.round(Math.max(1, round), rounds);
+    const quit = (
+        <button className="hud-quit" onClick={onQuit}>
+            {m.hud.quit}
+        </button>
+    );
+    // The side column is too narrow to share its top row with the corner
+    // controls, so there Quit moves to the bottom of the panel.
     const header = (
         <div className="hud-header">
             <span className="hud-round">{roundLabel}</span>
-            <button className="hud-quit" onClick={onQuit}>
-                Quit
-            </button>
+            {layout.kind === "top" && quit}
         </div>
     );
     const list = (
@@ -38,8 +45,9 @@ export function MatchHudView() {
         return (
             <aside className="hud hud-side" style={{ width: layout.width }}>
                 {header}
-                <div className="hud-message">{message}</div>
+                <div className="hud-message">{message(m)}</div>
                 {list}
+                <div className="hud-footer">{quit}</div>
             </aside>
         );
     }
@@ -50,7 +58,7 @@ export function MatchHudView() {
                 style={{ height: layout.barHeight }}
             >
                 {header}
-                <div className="hud-message">{message}</div>
+                <div className="hud-message">{message(m)}</div>
             </header>
             <section
                 className="hud hud-bottom"
@@ -63,6 +71,7 @@ export function MatchHudView() {
 }
 
 function Player({ player: p }: { player: HudPlayer }) {
+    const m = useMessages();
     return (
         <li
             className={`hud-player${p.active ? " active" : ""}${
@@ -71,16 +80,18 @@ function Player({ player: p }: { player: HudPlayer }) {
         >
             <span className="hud-dot" style={{ background: css(p.color) }} />
             <span className="hud-name">
-                {p.name}
+                {playerName(p)}
                 {p.isBot && <span className="hud-bot"> 🤖</span>}
             </span>
             <span className="hud-stats">
                 {p.eliminated ? (
-                    <span style={{ color: css(COLORS.wrong) }}>out</span>
+                    <span style={{ color: css(COLORS.wrong) }}>
+                        {m.hud.out}
+                    </span>
                 ) : (
                     <>
-                        <span title="Regions">⬢ {p.regions}</span>
-                        <span className="hud-hp" title="Capital shields">
+                        <span title={m.hud.regions}>⬢ {p.regions}</span>
+                        <span className="hud-hp" title={m.hud.shields}>
                             {"♥".repeat(p.capitalHp)}
                         </span>
                     </>

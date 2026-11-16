@@ -1,10 +1,14 @@
 import { McqAnswer, NumericAnswer, Side } from "app/core/types";
 import { sfx } from "app/audio/sfx";
+import type { Messages } from "app/i18n";
 import { createStore } from "app/ui/store";
 
 import { COLORS, wait } from "../ui";
 
 export interface Combatant {
+    /** Player id, or null for the neutral defender. */
+    id: string | null;
+    /** Raw player name; the view localizes it. */
     name: string;
     color: number;
     isHuman: boolean;
@@ -13,7 +17,7 @@ export interface Combatant {
 export interface BattleInfo {
     attacker: Combatant;
     defender: Combatant;
-    targetName: string;
+    targetId: string;
     isCapital: boolean;
     capitalHp: number;
     chainIndex: number;
@@ -41,7 +45,7 @@ interface Timed {
 
 export type BattleStep =
     | { kind: "header" }
-    | { kind: "announce"; text: string; color: number }
+    | { kind: "announce"; text: (m: Messages) => string; color: number }
     | (Timed & {
           kind: "mcq";
           question: PublicMcq;
@@ -112,7 +116,7 @@ export class BattleOverlay {
 
     /** Big centred announcement inside the panel (e.g. siege chain). */
     async announce(
-        text: string,
+        text: (m: Messages) => string,
         color: number = COLORS.gold,
         ms = 1300,
         chime = true

@@ -1,3 +1,4 @@
+import type { Messages } from "app/i18n";
 import { createStore } from "app/ui/store";
 
 export interface HudPlayer {
@@ -25,7 +26,8 @@ export interface MatchHudState {
     visible: boolean;
     round: number;
     rounds: number;
-    message: string;
+    /** Status line, rendered in the current language. */
+    message: (m: Messages) => string;
     players: HudPlayer[];
     layout: HudLayout;
     onQuit: () => void;
@@ -35,7 +37,7 @@ export const matchHud = createStore<MatchHudState>({
     visible: false,
     round: 1,
     rounds: 1,
-    message: "",
+    message: () => "",
     players: [],
     layout: { kind: "side", width: 240 },
     onQuit: () => undefined,

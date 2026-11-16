@@ -1,0 +1,1000 @@
+{
+  "questions": [
+    {
+      "id": "mcq-000-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Geography",
+      "text": "What is the capital of Bulgaria?",
+      "answers": [
+        "Sofia",
+        "Plovdiv",
+        "Varna",
+        "Burgas"
+      ]
+    },
+    {
+      "id": "mcq-000-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "География",
+      "text": "Коя е столицата на България?",
+      "answers": [
+        "София",
+        "Пловдив",
+        "Варна",
+        "Бургас"
+      ]
+    },
+    {
+      "id": "mcq-001-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Geography",
+      "text": "What is the highest peak in Bulgaria?",
+      "answers": [
+        "Musala",
+        "Vihren",
+        "Botev",
+        "Cherni Vrah"
+      ]
+    },
+    {
+      "id": "mcq-001-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "География",
+      "text": "Кой е най-високият връх в България?",
+      "answers": [
+        "Мусала",
+        "Вихрен",
+        "Ботев",
+        "Черни връх"
+      ]
+    },
+    {
+      "id": "mcq-002-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Geography",
+      "text": "Which river forms most of Bulgaria's northern border?",
+      "answers": [
+        "Danube",
+        "Maritsa",
+        "Iskar",
+        "Struma"
+      ]
+    },
+    {
+      "id": "mcq-002-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "География",
+      "text": "Коя река оформя по-голямата част от северната граница на България?",
+      "answers": [
+        "Дунав",
+        "Марица",
+        "Искър",
+        "Струма"
+      ]
+    },
+    {
+      "id": "mcq-003-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Geography",
+      "text": "Which sea does Bulgaria border?",
+      "answers": [
+        "Black Sea",
+        "Adriatic Sea",
+        "Aegean Sea",
+        "Caspian Sea"
+      ]
+    },
+    {
+      "id": "mcq-003-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "География",
+      "text": "До кое море е България?",
+      "answers": [
+        "Черно море",
+        "Адриатическо море",
+        "Егейско море",
+        "Каспийско море"
+      ]
+    },
+    {
+      "id": "mcq-004-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Geography",
+      "text": "Which of these countries does NOT border Bulgaria?",
+      "answers": [
+        "Hungary",
+        "Romania",
+        "Serbia",
+        "Greece"
+      ]
+    },
+    {
+      "id": "mcq-004-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "География",
+      "text": "Коя от тези държави НЕ граничи с България?",
+      "answers": [
+        "Унгария",
+        "Румъния",
+        "Сърбия",
+        "Гърция"
+      ]
+    },
+    {
+      "id": "mcq-005-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Geography",
+      "text": "In which mountain range is the Rila Monastery?",
+      "answers": [
+        "Rila",
+        "Pirin",
+        "Rhodopes",
+        "Balkan Mountains"
+      ]
+    },
+    {
+      "id": "mcq-005-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "География",
+      "text": "В коя планина се намира Рилският манастир?",
+      "answers": [
+        "Рила",
+        "Пирин",
+        "Родопи",
+        "Стара планина"
+      ]
+    },
+    {
+      "id": "mcq-006-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Geography",
+      "text": "What is the largest ocean on Earth?",
+      "answers": [
+        "Pacific",
+        "Atlantic",
+        "Indian",
+        "Arctic"
+      ]
+    },
+    {
+      "id": "mcq-006-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "География",
+      "text": "Кой е най-големият океан на Земята?",
+      "answers": [
+        "Тихи",
+        "Атлантически",
+        "Индийски",
+        "Северен ледовит"
+      ]
+    },
+    {
+      "id": "mcq-007-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Geography",
+      "text": "Which river is traditionally considered the longest in the world?",
+      "answers": [
+        "Nile",
+        "Amazon",
+        "Yangtze",
+        "Mississippi"
+      ]
+    },
+    {
+      "id": "mcq-007-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "География",
+      "text": "Коя река традиционно се смята за най-дългата в света?",
+      "answers": [
+        "Нил",
+        "Амазонка",
+        "Яндзъ",
+        "Мисисипи"
+      ]
+    },
+    {
+      "id": "mcq-008-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "History",
+      "text": "In which year did Bulgaria join the European Union?",
+      "answers": [
+        "2007",
+        "2004",
+        "2009",
+        "2013"
+      ]
+    },
+    {
+      "id": "mcq-008-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "История",
+      "text": "През коя година България се присъединява към Европейския съюз?",
+      "answers": [
+        "2007",
+        "2004",
+        "2009",
+        "2013"
+      ]
+    },
+    {
+      "id": "mcq-009-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "History",
+      "text": "Which city was the capital of the Second Bulgarian Empire?",
+      "answers": [
+        "Veliko Tarnovo",
+        "Pliska",
+        "Preslav",
+        "Sofia"
+      ]
+    },
+    {
+      "id": "mcq-009-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "История",
+      "text": "Кой град е столица на Второто българско царство?",
+      "answers": [
+        "Велико Търново",
+        "Плиска",
+        "Преслав",
+        "София"
+      ]
+    },
+    {
+      "id": "mcq-010-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "History",
+      "text": "Which revolutionary is known as the 'Apostle of Freedom'?",
+      "answers": [
+        "Vasil Levski",
+        "Hristo Botev",
+        "Georgi Rakovski",
+        "Lyuben Karavelov"
+      ]
+    },
+    {
+      "id": "mcq-010-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "История",
+      "text": "Кой революционер е известен като „Апостола на свободата“?",
+      "answers": [
+        "Васил Левски",
+        "Христо Ботев",
+        "Георги Раковски",
+        "Любен Каравелов"
+      ]
+    },
+    {
+      "id": "mcq-011-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "History",
+      "text": "On which date is Bulgaria's Liberation Day celebrated?",
+      "answers": [
+        "3 March",
+        "6 September",
+        "22 September",
+        "24 May"
+      ]
+    },
+    {
+      "id": "mcq-011-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "История",
+      "text": "На коя дата се отбелязва Освобождението на България?",
+      "answers": [
+        "3 март",
+        "6 септември",
+        "22 септември",
+        "24 май"
+      ]
+    },
+    {
+      "id": "mcq-012-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "History",
+      "text": "In which year did World War II end?",
+      "answers": [
+        "1945",
+        "1944",
+        "1939",
+        "1918"
+      ]
+    },
+    {
+      "id": "mcq-012-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "История",
+      "text": "През коя година завършва Втората световна война?",
+      "answers": [
+        "1945",
+        "1944",
+        "1939",
+        "1918"
+      ]
+    },
+    {
+      "id": "mcq-013-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "History",
+      "text": "Which alphabet was developed in the First Bulgarian Empire?",
+      "answers": [
+        "Cyrillic",
+        "Runic",
+        "Latin",
+        "Armenian"
+      ]
+    },
+    {
+      "id": "mcq-013-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "История",
+      "text": "Коя азбука е създадена в Първото българско царство?",
+      "answers": [
+        "Кирилицата",
+        "Руническата",
+        "Латиницата",
+        "Арменската"
+      ]
+    },
+    {
+      "id": "mcq-014-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Culture",
+      "text": "Who wrote the novel 'Under the Yoke'?",
+      "answers": [
+        "Ivan Vazov",
+        "Aleko Konstantinov",
+        "Elin Pelin",
+        "Yordan Yovkov"
+      ]
+    },
+    {
+      "id": "mcq-014-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Култура",
+      "text": "Кой е авторът на романа „Под игото“?",
+      "answers": [
+        "Иван Вазов",
+        "Алеко Константинов",
+        "Елин Пелин",
+        "Йордан Йовков"
+      ]
+    },
+    {
+      "id": "mcq-015-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Culture",
+      "text": "Bulgaria's Rose Valley is famous for producing what?",
+      "answers": [
+        "Rose oil",
+        "Wine",
+        "Honey",
+        "Tobacco"
+      ]
+    },
+    {
+      "id": "mcq-015-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Култура",
+      "text": "С производството на какво е известна Розовата долина?",
+      "answers": [
+        "Розово масло",
+        "Вино",
+        "Мед",
+        "Тютюн"
+      ]
+    },
+    {
+      "id": "mcq-016-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Culture",
+      "text": "Which Bulgarian city was European Capital of Culture in 2019?",
+      "answers": [
+        "Plovdiv",
+        "Sofia",
+        "Varna",
+        "Ruse"
+      ]
+    },
+    {
+      "id": "mcq-016-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Култура",
+      "text": "Кой български град е Европейска столица на културата през 2019 г.?",
+      "answers": [
+        "Пловдив",
+        "София",
+        "Варна",
+        "Русе"
+      ]
+    },
+    {
+      "id": "mcq-017-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Culture",
+      "text": "Who painted the Mona Lisa?",
+      "answers": [
+        "Leonardo da Vinci",
+        "Michelangelo",
+        "Raphael",
+        "Botticelli"
+      ]
+    },
+    {
+      "id": "mcq-017-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Култура",
+      "text": "Кой е нарисувал „Мона Лиза“?",
+      "answers": [
+        "Леонардо да Винчи",
+        "Микеланджело",
+        "Рафаело",
+        "Ботичели"
+      ]
+    },
+    {
+      "id": "mcq-018-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Culture",
+      "text": "Who composed the 'Moonlight Sonata'?",
+      "answers": [
+        "Beethoven",
+        "Mozart",
+        "Chopin",
+        "Bach"
+      ]
+    },
+    {
+      "id": "mcq-018-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Култура",
+      "text": "Кой е композирал „Лунна соната“?",
+      "answers": [
+        "Бетовен",
+        "Моцарт",
+        "Шопен",
+        "Бах"
+      ]
+    },
+    {
+      "id": "mcq-019-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Science",
+      "text": "Which is the largest planet in the Solar System?",
+      "answers": [
+        "Jupiter",
+        "Saturn",
+        "Neptune",
+        "Earth"
+      ]
+    },
+    {
+      "id": "mcq-019-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Наука",
+      "text": "Коя е най-голямата планета в Слънчевата система?",
+      "answers": [
+        "Юпитер",
+        "Сатурн",
+        "Нептун",
+        "Земята"
+      ]
+    },
+    {
+      "id": "mcq-020-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Science",
+      "text": "What is the chemical symbol for gold?",
+      "answers": [
+        "Au",
+        "Ag",
+        "Gd",
+        "Go"
+      ]
+    },
+    {
+      "id": "mcq-020-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Наука",
+      "text": "Какъв е химичният символ на златото?",
+      "answers": [
+        "Au",
+        "Ag",
+        "Gd",
+        "Go"
+      ]
+    },
+    {
+      "id": "mcq-021-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Science",
+      "text": "What is the smallest prime number?",
+      "answers": [
+        "2",
+        "1",
+        "3",
+        "0"
+      ]
+    },
+    {
+      "id": "mcq-021-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Наука",
+      "text": "Кое е най-малкото просто число?",
+      "answers": [
+        "2",
+        "1",
+        "3",
+        "0"
+      ]
+    },
+    {
+      "id": "mcq-022-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Science",
+      "text": "Which planet is known as the Red Planet?",
+      "answers": [
+        "Mars",
+        "Venus",
+        "Mercury",
+        "Jupiter"
+      ]
+    },
+    {
+      "id": "mcq-022-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Наука",
+      "text": "Коя планета е известна като Червената планета?",
+      "answers": [
+        "Марс",
+        "Венера",
+        "Меркурий",
+        "Юпитер"
+      ]
+    },
+    {
+      "id": "mcq-023-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Science",
+      "text": "What is the hardest natural substance?",
+      "answers": [
+        "Diamond",
+        "Quartz",
+        "Granite",
+        "Iron"
+      ]
+    },
+    {
+      "id": "mcq-023-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Наука",
+      "text": "Кое е най-твърдото естествено вещество?",
+      "answers": [
+        "Диамант",
+        "Кварц",
+        "Гранит",
+        "Желязо"
+      ]
+    },
+    {
+      "id": "mcq-024-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Science",
+      "text": "Which element has the chemical symbol Fe?",
+      "answers": [
+        "Iron",
+        "Fluorine",
+        "Lead",
+        "Tin"
+      ]
+    },
+    {
+      "id": "mcq-024-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Наука",
+      "text": "Кой елемент има химичен символ Fe?",
+      "answers": [
+        "Желязо",
+        "Флуор",
+        "Олово",
+        "Калай"
+      ]
+    },
+    {
+      "id": "mcq-025-en",
+      "language": "en",
+      "kind": "multiple_choice",
+      "category": "Science",
+      "text": "Roughly how fast does light travel in a vacuum?",
+      "answers": [
+        "300,000 km/s",
+        "30,000 km/s",
+        "3,000 km/s",
+        "3,000,000 km/s"
+      ]
+    },
+    {
+      "id": "mcq-025-bg",
+      "language": "bg",
+      "kind": "multiple_choice",
+      "category": "Наука",
+      "text": "С каква приблизителна скорост се движи светлината във вакуум?",
+      "answers": [
+        "300 000 км/с",
+        "30 000 км/с",
+        "3 000 км/с",
+        "3 000 000 км/с"
+      ]
+    },
+    {
+      "id": "num-000-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Geography",
+      "text": "How tall is Musala, Bulgaria's highest peak (in metres)?",
+      "numeric_answer": 2925
+    },
+    {
+      "id": "num-000-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "География",
+      "text": "Колко е висок връх Мусала, най-високият в България (в метри)?",
+      "numeric_answer": 2925
+    },
+    {
+      "id": "num-001-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Geography",
+      "text": "How many provinces (oblasts) does Bulgaria have?",
+      "numeric_answer": 28
+    },
+    {
+      "id": "num-001-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "География",
+      "text": "Колко области има България?",
+      "numeric_answer": 28
+    },
+    {
+      "id": "num-002-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Geography",
+      "text": "How many countries share a land border with Bulgaria?",
+      "numeric_answer": 5
+    },
+    {
+      "id": "num-002-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "География",
+      "text": "С колко държави има сухопътна граница България?",
+      "numeric_answer": 5
+    },
+    {
+      "id": "num-003-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Geography",
+      "text": "How tall is Mount Everest (in metres)?",
+      "numeric_answer": 8849
+    },
+    {
+      "id": "num-003-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "География",
+      "text": "Колко е висок връх Еверест (в метри)?",
+      "numeric_answer": 8849
+    },
+    {
+      "id": "num-004-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Geography",
+      "text": "What is the average distance from the Earth to the Moon (in km)?",
+      "numeric_answer": 384400
+    },
+    {
+      "id": "num-004-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "География",
+      "text": "Какво е средното разстояние от Земята до Луната (в км)?",
+      "numeric_answer": 384400
+    },
+    {
+      "id": "num-005-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "History",
+      "text": "In which year was Bulgaria liberated from Ottoman rule?",
+      "numeric_answer": 1878
+    },
+    {
+      "id": "num-005-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "История",
+      "text": "През коя година България е освободена от османско владичество?",
+      "numeric_answer": 1878
+    },
+    {
+      "id": "num-006-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "History",
+      "text": "In which year did Bulgaria declare independence?",
+      "numeric_answer": 1908
+    },
+    {
+      "id": "num-006-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "История",
+      "text": "През коя година България обявява независимост?",
+      "numeric_answer": 1908
+    },
+    {
+      "id": "num-007-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "History",
+      "text": "In which year is the First Bulgarian state traditionally said to be founded?",
+      "numeric_answer": 681
+    },
+    {
+      "id": "num-007-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "История",
+      "text": "През коя година традиционно се смята, че е основана Първата българска държава?",
+      "numeric_answer": 681
+    },
+    {
+      "id": "num-008-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "History",
+      "text": "In which year was Vasil Levski executed?",
+      "numeric_answer": 1873
+    },
+    {
+      "id": "num-008-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "История",
+      "text": "През коя година е обесен Васил Левски?",
+      "numeric_answer": 1873
+    },
+    {
+      "id": "num-009-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "History",
+      "text": "In which year did Sofia become the capital of Bulgaria?",
+      "numeric_answer": 1879
+    },
+    {
+      "id": "num-009-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "История",
+      "text": "През коя година София става столица на България?",
+      "numeric_answer": 1879
+    },
+    {
+      "id": "num-010-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "History",
+      "text": "In which year did humans first land on the Moon?",
+      "numeric_answer": 1969
+    },
+    {
+      "id": "num-010-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "История",
+      "text": "През коя година човек за първи път стъпва на Луната?",
+      "numeric_answer": 1969
+    },
+    {
+      "id": "num-011-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "History",
+      "text": "In which year did Columbus first reach the Americas?",
+      "numeric_answer": 1492
+    },
+    {
+      "id": "num-011-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "История",
+      "text": "През коя година Колумб за първи път достига Америка?",
+      "numeric_answer": 1492
+    },
+    {
+      "id": "num-012-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "History",
+      "text": "In which year did the Berlin Wall fall?",
+      "numeric_answer": 1989
+    },
+    {
+      "id": "num-012-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "История",
+      "text": "През коя година пада Берлинската стена?",
+      "numeric_answer": 1989
+    },
+    {
+      "id": "num-013-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "History",
+      "text": "In which year did the Titanic sink?",
+      "numeric_answer": 1912
+    },
+    {
+      "id": "num-013-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "История",
+      "text": "През коя година потъва „Титаник“?",
+      "numeric_answer": 1912
+    },
+    {
+      "id": "num-014-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Culture",
+      "text": "In which year was Ivan Vazov born?",
+      "numeric_answer": 1850
+    },
+    {
+      "id": "num-014-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "Култура",
+      "text": "През коя година е роден Иван Вазов?",
+      "numeric_answer": 1850
+    },
+    {
+      "id": "num-015-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Culture",
+      "text": "How many keys does a standard piano have?",
+      "numeric_answer": 88
+    },
+    {
+      "id": "num-015-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "Култура",
+      "text": "Колко клавиша има стандартното пиано?",
+      "numeric_answer": 88
+    },
+    {
+      "id": "num-016-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Science",
+      "text": "How many bones are in the adult human body?",
+      "numeric_answer": 206
+    },
+    {
+      "id": "num-016-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "Наука",
+      "text": "Колко кости има в тялото на възрастен човек?",
+      "numeric_answer": 206
+    },
+    {
+      "id": "num-017-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Science",
+      "text": "At what temperature does water boil at sea level (in °F)?",
+      "numeric_answer": 212
+    },
+    {
+      "id": "num-017-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "Наука",
+      "text": "При каква температура кипи водата на морското равнище (в °F)?",
+      "numeric_answer": 212
+    },
+    {
+      "id": "num-018-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Science",
+      "text": "Roughly how fast does sound travel in air at 20 °C (in m/s)?",
+      "numeric_answer": 343
+    },
+    {
+      "id": "num-018-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "Наука",
+      "text": "С каква приблизителна скорост се разпространява звукът във въздуха при 20 °C (в м/с)?",
+      "numeric_answer": 343
+    },
+    {
+      "id": "num-019-en",
+      "language": "en",
+      "kind": "numeric",
+      "category": "Science",
+      "text": "How many days are there in a leap year?",
+      "numeric_answer": 366
+    },
+    {
+      "id": "num-019-bg",
+      "language": "bg",
+      "kind": "numeric",
+      "category": "Наука",
+      "text": "Колко дни има във високосна година?",
+      "numeric_answer": 366
+    }
+  ]
+}

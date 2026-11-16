@@ -6,6 +6,8 @@ import {
     BULGARIA_SHAPE_SIZE,
 } from "app/core/maps/bulgariaShapes";
 
+import { regionName } from "app/i18n";
+
 import { COLORS, easeOutBack, label, tween } from "../ui";
 
 export const MapEvent = {
@@ -146,7 +148,7 @@ export class MapView extends PIXI.Container {
         for (const view of this.regions.values()) {
             this.drawRegion(view);
             this.drawBadge(view);
-            view.name.text = state.map.regions[view.id].name;
+            view.name.text = regionName(view.id);
         }
     }
 

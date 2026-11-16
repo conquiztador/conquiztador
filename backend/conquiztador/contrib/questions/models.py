@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -13,9 +14,20 @@ from . import managers
 UserModel = get_user_model()
 
 
+def language_field():
+    return models.CharField(
+        _("Language"),
+        max_length=8,
+        choices=settings.LANGUAGES,
+        default=settings.GAME_LANGUAGE_DEFAULT,
+        db_index=True,
+    )
+
+
 class Category(TimestampedModel):
     uuid = models.UUIDField(default=uuid.uuid4, primary_key=True)
     name = models.CharField(_("Name"), max_length=254)
+    language = language_field()
 
     class Meta:
         verbose_name = _("Category")
@@ -35,6 +47,7 @@ class Question(TimestampedModel):
 
     uuid = models.UUIDField(default=uuid.uuid4, primary_key=True)
     text = models.CharField(_("Text"), max_length=254)
+    language = language_field()
     kind = models.CharField(
         _("Kind"),
         max_length=32,

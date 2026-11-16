@@ -43,3 +43,10 @@ body {
 .corner-button:hover {
     background: rgba(47, 111, 214, 0.9);
 }
+
+.language-button {
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}

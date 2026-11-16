@@ -3,6 +3,14 @@
 
 LANGUAGE_CODE = "en-us"
 
+# Languages the game is played in. Questions and categories each belong to
+# one of these; a match only uses questions in the player's language.
+LANGUAGES = [
+    ("en", "English"),
+    ("bg", "Bulgarian"),
+]
+GAME_LANGUAGE_DEFAULT = "en"
+
 TIME_ZONE = "UTC"
 
 USE_I18N = True
