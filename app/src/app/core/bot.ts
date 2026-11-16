@@ -1,3 +1,4 @@
+import { capitalCandidates } from "./territory";
 import { gaussian, pick, randomInt, Rng, shuffle } from "./rng";
 import { attackableTargets } from "./territory";
 import {
@@ -130,16 +131,7 @@ export function botChooseTarget(
     return best;
 }
 
-/** Picks a starting capital, preferring regions not adjacent to an existing capital. */
+/** Picks a starting capital among the allowed (spaced-out) regions. */
 export function botChooseCapital(rng: Rng, state: GameState): RegionId {
-    const free = Object.values(state.territories)
-        .filter((t) => t.ownerId === null)
-        .map((t) => t.regionId);
-    const isolated = free.filter(
-        (id) =>
-            !state.map.regions[id].neighbors.some(
-                (n) => state.territories[n].isCapital
-            )
-    );
-    return pick(rng, isolated.length > 0 ? isolated : free);
+    return pick(rng, capitalCandidates(state));
 }

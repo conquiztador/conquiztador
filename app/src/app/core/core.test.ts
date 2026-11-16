@@ -87,6 +87,61 @@ function draftedGame(overrides: Partial<GameConfig> = {}) {
     return { engine, first, second };
 }
 
+describe("capital placement", () => {
+    function draft() {
+        const engine = new GameEngine(
+            humans(),
+            LINE,
+            questions,
+            createSeededRng(1)
+        );
+        engine.start();
+        const [first, second] = engine.getState().turnOrder;
+        return { engine, first, second };
+    }
+
+    it("rejects a capital bordering another capital", () => {
+        const { engine, first, second } = draft();
+        engine.selectCapital(first, "a");
+        expect(() => engine.selectCapital(second, "b")).toThrow(GameRuleError);
+    });
+
+    it("only offers regions with a gap to existing capitals", () => {
+        const { engine, first } = draft();
+        engine.selectCapital(first, "c");
+        expect(engine.capitalCandidates().sort()).toEqual(["a", "e"]);
+    });
+
+    it("keeps bot and random capitals apart on the Bulgaria map", () => {
+        for (let seed = 1; seed <= 200; seed++) {
+            const engine = new GameEngine(
+                {
+                    ...DEFAULT_CONFIG,
+                    placement: "random",
+                    players: [1, 2, 3, 4, 5].map((i) => ({
+                        id: `b${i}`,
+                        name: `B${i}`,
+                        kind: "bot" as const,
+                        difficulty: Difficulty.Medium,
+                    })),
+                },
+                BULGARIA,
+                questions,
+                createSeededRng(seed)
+            );
+            engine.start();
+            const { territories } = engine.getState();
+            for (const t of Object.values(territories)) {
+                if (!t.isCapital) continue;
+                const touching = BULGARIA.regions[t.regionId].neighbors.filter(
+                    (n) => territories[n].isCapital
+                );
+                expect(touching).toEqual([]);
+            }
+        }
+    });
+});
+
 describe("Bulgaria map", () => {
     it("has 28 regions", () => {
         expect(Object.keys(BULGARIA.regions)).toHaveLength(28);

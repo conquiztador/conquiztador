@@ -4,6 +4,7 @@ import { Rng, shuffle } from "./rng";
 import {
     applyAttackerWin,
     attackableTargets,
+    capitalCandidates,
     isAttackable,
     territoriesOf,
 } from "./territory";
@@ -137,6 +138,11 @@ export class GameEngine {
         return this.state.players.find((p) => p.id === id) ?? null;
     }
 
+    /** Regions where a capital may be placed right now. */
+    capitalCandidates(): RegionId[] {
+        return capitalCandidates(this.state);
+    }
+
     attackableTargets(playerId: PlayerId): RegionId[] {
         return attackableTargets(this.state, playerId);
     }
@@ -173,6 +179,10 @@ export class GameEngine {
         const t = this.state.territories[regionId];
         if (!t) throw new GameRuleError(`Unknown region ${regionId}`);
         if (t.ownerId !== null) throw new GameRuleError("Region already taken");
+        if (!capitalCandidates(this.state).includes(regionId))
+            throw new GameRuleError(
+                "Capitals must have at least one region between them"
+            );
 
         this.placeCapital(playerId, regionId);
         this.state.turnIndex++;

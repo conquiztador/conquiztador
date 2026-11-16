@@ -15,6 +15,27 @@ export function territoriesOf(
     return Object.values(territories).filter((t) => t.ownerId === playerId);
 }
 
+/**
+ * Regions where a new capital may be placed: unowned and not bordering an
+ * existing capital, so at least one region separates any two capitals.
+ * Falls back to any unowned region if the map leaves no such spot, so a
+ * draft can never get stuck.
+ */
+export function capitalCandidates(
+    state: Pick<GameState, "map" | "territories">
+): RegionId[] {
+    const free = Object.values(state.territories)
+        .filter((t) => t.ownerId === null)
+        .map((t) => t.regionId);
+    const spaced = free.filter(
+        (id) =>
+            !state.map.regions[id].neighbors.some(
+                (n) => state.territories[n].isCapital
+            )
+    );
+    return spaced.length > 0 ? spaced : free;
+}
+
 /** Regions the player may attack: adjacent to something they own and not owned by them. */
 export function attackableTargets(
     state: Pick<GameState, "map" | "territories">,

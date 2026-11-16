@@ -217,12 +217,10 @@ export class ConquestPage extends Page {
     }
 
     private async capitalSelection() {
-        const s = this.engine.getState();
-        const free = Object.values(s.territories)
-            .filter((t) => t.ownerId === null)
-            .map((t) => t.regionId);
         this.message.text = "Choose your capital";
-        const region = await this.waitForRegion(free);
+        const region = await this.waitForRegion(
+            this.engine.capitalCandidates()
+        );
         this.engine.selectCapital(HUMAN_ID, region);
     }
 
