@@ -1,9 +1,11 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 const HOST = "conquiztador.local";
 
 export default defineConfig(({ mode }) => ({
+    plugins: [react()],
     resolve: {
         tsconfigPaths: true,
         alias:

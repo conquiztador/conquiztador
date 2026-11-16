@@ -51,11 +51,7 @@ export class ConquestPage extends Page {
         quit.position.set(1190, 50);
         this.addChild(quit);
 
-        this.overlay = new BattleOverlay(
-            app.ticker,
-            app.designWidth,
-            app.designHeight
-        );
+        this.overlay = new BattleOverlay();
 
         this.app.stage.on(GameEvent.startMatch, (config: GameConfig) =>
             this.startMatch(config)
@@ -82,7 +78,6 @@ export class ConquestPage extends Page {
         this.hud.position.set(910, 110);
 
         this.addChild(this.map, this.hud);
-        this.addChild(this.overlay); // keep overlay on top
         this.overlay.close();
 
         this.engine = new GameEngine(

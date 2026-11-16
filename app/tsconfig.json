@@ -22,6 +22,7 @@
     "types": ["jest", "vite/client"],
     "skipLibCheck": true,
     "allowJs": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "jsx": "react-jsx"
   }
 }

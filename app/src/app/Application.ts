@@ -5,6 +5,12 @@ export const DESIGN_WIDTH = 1280;
 export const DESIGN_HEIGHT = 768;
 
 export default class Application extends PIXI.Application {
+    /**
+     * DOM layer above the canvas, sized to the design area and scaled with
+     * the stage, so HTML UI can use the same 1280×768 coordinates.
+     */
+    public readonly uiRoot: HTMLDivElement = document.createElement("div");
+
     /** Center of the design area, in stage coordinates. */
     public get center(): PIXI.Point {
         return new PIXI.Point(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
@@ -35,6 +41,11 @@ export default class Application extends PIXI.Application {
         this.canvas.style.display = "block";
         document.body.appendChild(this.canvas);
 
+        this.uiRoot.id = "ui-root";
+        this.uiRoot.style.width = `${DESIGN_WIDTH}px`;
+        this.uiRoot.style.height = `${DESIGN_HEIGHT}px`;
+        document.body.appendChild(this.uiRoot);
+
         this.fitStage();
         window.addEventListener("resize", () => this.fitStage());
     }
@@ -48,10 +59,11 @@ export default class Application extends PIXI.Application {
         const height = window.innerHeight;
         const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
 
+        const x = (width - DESIGN_WIDTH * scale) / 2;
+        const y = (height - DESIGN_HEIGHT * scale) / 2;
+
         this.stage.scale.set(scale);
-        this.stage.position.set(
-            (width - DESIGN_WIDTH * scale) / 2,
-            (height - DESIGN_HEIGHT * scale) / 2
-        );
+        this.stage.position.set(x, y);
+        this.uiRoot.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
     }
 }

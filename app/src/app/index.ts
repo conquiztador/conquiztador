@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 
 import "./styles/main.css";
 import Application from "./Application";
+import { mountUi } from "./ui/mountUi";
 import LayerManager from "./managers/LayerManager";
 import { MenuPage } from "./pages/MenuPage";
 import { LobbyPage } from "./pages/LobbyPage";
@@ -14,6 +15,7 @@ import { GameOverPage } from "./pages/GameOverPage";
 async function main() {
     const app = new Application();
     await app.setup();
+    mountUi(app.uiRoot);
 
     const layerManager = new LayerManager(app);
 
