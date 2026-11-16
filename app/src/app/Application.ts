@@ -12,7 +12,7 @@ export const DESIGN_SIZES: Record<
 };
 
 export const AppEvent = {
-    /** Emitted on the stage when the orientation (design size) changes. */
+    /** Emitted on the stage after every resize (orientation may have changed). */
     layout: "layout",
 } as const;
 
@@ -22,6 +22,12 @@ export default class Application extends PIXI.Application {
      * the stage, so HTML UI can use the same coordinates as the stage.
      */
     public readonly uiRoot: HTMLDivElement = document.createElement("div");
+
+    /**
+     * Unscaled DOM layer covering the whole window, for UI that should stay
+     * at a readable size in real CSS pixels (HUD, mute button).
+     */
+    public readonly screenRoot: HTMLDivElement = document.createElement("div");
 
     private _orientation: Orientation = "landscape";
 
@@ -56,6 +62,9 @@ export default class Application extends PIXI.Application {
             height: window.innerHeight,
             antialias: true,
             resizeTo: window,
+            // Render at the device's pixel density so text is sharp on phones.
+            resolution: window.devicePixelRatio || 1,
+            autoDensity: true,
         });
 
         document.body.style.margin = "0";
@@ -63,6 +72,8 @@ export default class Application extends PIXI.Application {
         this.canvas.style.display = "block";
         document.body.appendChild(this.canvas);
 
+        this.screenRoot.id = "screen-root";
+        document.body.appendChild(this.screenRoot);
         this.uiRoot.id = "ui-root";
         document.body.appendChild(this.uiRoot);
 
@@ -86,7 +97,6 @@ export default class Application extends PIXI.Application {
             scaleFor("portrait") > scaleFor("landscape")
                 ? "portrait"
                 : "landscape";
-        const changed = orientation !== this._orientation;
         this._orientation = orientation;
 
         const scale = scaleFor(orientation);
@@ -102,6 +112,15 @@ export default class Application extends PIXI.Application {
         ui.transform = `translate(${x}px, ${y}px) scale(${scale})`;
         this.uiRoot.dataset.orientation = orientation;
 
-        if (changed) this.stage.emit(AppEvent.layout, orientation);
+        this.stage.emit(AppEvent.layout, orientation);
+    }
+
+    /** Converts window (CSS pixel) coordinates to stage coordinates. */
+    public screenToStage(x: number, y: number): PIXI.Point {
+        const s = this.stage.scale.x;
+        return new PIXI.Point(
+            (x - this.stage.position.x) / s,
+            (y - this.stage.position.y) / s
+        );
     }
 }

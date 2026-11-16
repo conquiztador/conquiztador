@@ -15,7 +15,7 @@ import { GameOverPage } from "./pages/GameOverPage";
 async function main() {
     const app = new Application();
     await app.setup();
-    mountUi(app.uiRoot);
+    mountUi(app.uiRoot, app.screenRoot);
 
     const layerManager = new LayerManager(app);
 

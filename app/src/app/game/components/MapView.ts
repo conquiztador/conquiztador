@@ -6,7 +6,7 @@ import {
     BULGARIA_SHAPE_SIZE,
 } from "app/core/maps/bulgariaShapes";
 
-import { COLORS, label } from "../ui";
+import { COLORS, easeOutBack, label, tween } from "../ui";
 
 export const MapEvent = {
     regionSelected: "regionSelected",
@@ -69,12 +69,19 @@ export class MapView extends PIXI.Container {
     private colors: Record<PlayerId, number> = {};
     private pulse = 0;
     private highlightLayer = new PIXI.Graphics();
+    private effectLayer = new PIXI.Container();
+    private labelScale = 1;
 
     constructor(private ticker: PIXI.Ticker, public readonly mapScale = 1) {
         super();
         const shapeLayer = new PIXI.Container();
         const labelLayer = new PIXI.Container();
-        this.addChild(shapeLayer, this.highlightLayer, labelLayer);
+        this.addChild(
+            shapeLayer,
+            this.effectLayer,
+            this.highlightLayer,
+            labelLayer
+        );
 
         for (const [id, raw] of Object.entries(BULGARIA_SHAPES)) {
             const points = raw.map((v) => v * mapScale);
@@ -151,6 +158,68 @@ export class MapView extends PIXI.Container {
                 : "default";
         }
         this.redrawAll();
+    }
+
+    /**
+     * Animates a region being claimed: the new colour floods outward from the
+     * region's centre with a shockwave ring, then `apply` swaps in the real
+     * state (in the same frame, so nothing flickers) and the badge pops in.
+     */
+    async claim(id: RegionId, color: number, apply: () => void) {
+        const view = this.regions.get(id);
+        const { x, y } = view.centroid;
+        let radius = 0;
+        for (let i = 0; i < view.points.length; i += 2)
+            radius = Math.max(
+                radius,
+                Math.hypot(view.points[i] - x, view.points[i + 1] - y)
+            );
+        radius += 4;
+
+        const fill = new PIXI.Graphics()
+            .poly(view.points)
+            .fill({ color })
+            .stroke({ width: 1.5, color: 0x1a1a1a, alpha: 0.9 });
+        const mask = new PIXI.Graphics();
+        fill.mask = mask;
+        const ring = new PIXI.Graphics();
+        this.effectLayer.addChild(fill, mask, ring);
+
+        await tween(this.ticker, 700, (t) => {
+            const eased = 1 - (1 - t) ** 3;
+            mask.clear()
+                .circle(x, y, radius * eased)
+                .fill(0xffffff);
+            ring.clear()
+                .circle(x, y, radius * (0.3 + 1.1 * eased))
+                .stroke({ width: 4, color: lighten(color, 0.5), alpha: 1 - t });
+        });
+
+        apply();
+        fill.destroy();
+        mask.destroy();
+        ring.destroy();
+
+        view.badge.scale.set(0);
+        await tween(this.ticker, 350, (t) =>
+            view.badge.scale.set(easeOutBack(t) * this.labelScale)
+        );
+    }
+
+    /**
+     * Scales region names and badges (around their anchor points) so they
+     * stay legible when the map itself is drawn small.
+     */
+    setLabelScale(scale: number) {
+        this.labelScale = scale;
+        for (const view of this.regions.values()) {
+            view.name.scale.set(scale);
+            view.badge.scale.set(scale);
+            view.name.position.set(
+                view.centroid.x,
+                view.centroid.y + 8 * scale
+            );
+        }
     }
 
     setFocus(id: RegionId | null) {

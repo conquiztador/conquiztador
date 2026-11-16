@@ -9,15 +9,17 @@ import {
     Difficulty,
     GameConfig,
     GamePhase,
+    GameState,
     PlayerId,
     RegionId,
     Side,
 } from "app/core/types";
 import { BattleOverlay, Combatant } from "app/game/components/BattleOverlay";
-import { HudView } from "app/game/components/HudView";
+import { HUD, matchHud } from "app/game/components/MatchHud";
 import { MapEvent, MapView } from "app/game/components/MapView";
 import { LocalQuestionProvider } from "app/game/questions/LocalQuestionProvider";
-import { Button, COLORS, label, PLAYER_COLORS, wait } from "app/game/ui";
+import { COLORS, PLAYER_COLORS, wait } from "app/game/ui";
+import { territoriesOf } from "app/core/territory";
 import { sfx } from "app/audio/sfx";
 
 const NEUTRAL: Combatant = {
@@ -26,33 +28,26 @@ const NEUTRAL: Combatant = {
     isHuman: false,
 };
 const HUMAN_ID = "you";
+/** Map labels never render smaller than this many CSS pixels. */
+const MIN_LABEL_PX = 9;
+const MAP_LABEL_FONT = 11;
 
 /** The match screen: map, HUD and battle flow driven by the GameEngine. */
 export class ConquestPage extends Page {
     private engine: GameEngine;
     private map: MapView;
-    private hud: HudView;
     private overlay: BattleOverlay;
-    private quitButton: Button;
-    private message = label("", 26, COLORS.text, {
-        stroke: { color: 0x000000, width: 4 },
-    });
     private colors: Record<PlayerId, number> = {};
     private matchId = 0;
     private regionWaiter: ((id: RegionId) => void) | null = null;
+    /** Players whose capital has been shown; others are hidden until revealed. */
+    private revealed = new Set<PlayerId>();
 
     constructor(app: Application, layerManager: LayerManager) {
         super(app, layerManager);
         this.visible = false;
 
-        this.message.anchor.set(0.5);
-        this.addChild(this.message);
-
-        this.quitButton = new Button("Quit", 120, 44, 20).onClick(() =>
-            this.quit()
-        );
-        this.addChild(this.quitButton);
-
+        matchHud.set((s) => ({ ...s, onQuit: () => this.quit() }));
         this.overlay = new BattleOverlay();
 
         this.app.stage.on(GameEvent.startMatch, (config: GameConfig) =>
@@ -61,49 +56,81 @@ export class ConquestPage extends Page {
         this.layout();
     }
 
+    /** Status line shown in the HUD. */
+    private set status(text: string) {
+        matchHud.set((s) => ({ ...s, message: text }));
+    }
+
     /**
-     * Landscape: map on the left, HUD on the right.
-     * Portrait: map across the top, HUD underneath.
+     * Sizes the map to fill the window space the HUD leaves free (in real
+     * pixels, ignoring the design-area letterbox).
+     * - Wide windows: HUD is a column on the right; the map gets full height.
+     * - Tall windows: HUD bar on top, map below it, player grid under the map.
      */
     protected layout() {
-        const w = this.app.designWidth;
-        const h = this.app.designHeight;
-        this.quitButton.position.set(w - 90, 50);
-
-        if (this.app.isPortrait) {
-            this.message.position.set(w / 2, 120);
-            this.message.style.wordWrapWidth = w - 40;
-        } else {
-            this.message.position.set(450, 50);
-            this.message.style.wordWrapWidth = 820;
-        }
-        this.message.style.wordWrap = true;
-        this.message.style.align = "center";
         if (!this.map) return;
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+        const m = HUD.margin;
+        const mapW = this.map.mapWidth;
+        const mapH = this.map.mapHeight;
+        const aspect = mapW / mapH;
 
-        if (this.app.isPortrait) {
-            const mapWidth = w - 30;
-            this.map.scale.set(mapWidth / this.map.mapWidth);
-            this.map.position.set(15, 165);
-            const hudTop = 165 + this.map.mapHeight * this.map.scale.y + 20;
-            this.hud.position.set(20, hudTop);
-            this.hud.resize(w - 40, h - hudTop - 30);
+        let area: { x: number; y: number; w: number; h: number };
+        if (W / H > 1.15) {
+            // Give the map full height, and the HUD whatever width is left
+            // (within limits).
+            const side = Math.min(
+                HUD.sideMax,
+                Math.max(HUD.sideMin, W - (H - 2 * m) * aspect - 3 * m)
+            );
+            matchHud.set((s) => ({
+                ...s,
+                layout: { kind: "side", width: side },
+            }));
+            area = { x: m, y: m, w: W - side - 3 * m, h: H - 2 * m };
         } else {
-            this.map.scale.set(1);
-            this.map.position.set(30, 110);
-            this.hud.position.set(910, 110);
-            this.hud.resize(340, 560);
+            const players = this.engine?.getState().players.length ?? 3;
+            const cols = Math.max(1, Math.floor((W - 2 * m) / 160));
+            const gridH = Math.ceil(players / cols) * HUD.playerRow + 2 * m;
+            const top = HUD.barHeight + m;
+            const h = Math.min((W - 2 * m) / aspect, H - top - gridH);
+            // Centre the map + player grid in the space under the bar
+            // rather than leaving all the slack at the bottom.
+            const slack = Math.max(0, H - top - h - gridH);
+            area = { x: m, y: top + slack / 2, w: W - 2 * m, h };
+            matchHud.set((s) => ({
+                ...s,
+                layout: {
+                    kind: "top",
+                    barHeight: HUD.barHeight,
+                    playersTop: area.y + h + m,
+                },
+            }));
         }
+
+        // On-screen scale of the map, centered within its area.
+        const k = Math.min(area.w / mapW, area.h / mapH);
+        const stageScale = this.app.stage.scale.x;
+        const topLeft = this.app.screenToStage(
+            area.x + (area.w - mapW * k) / 2,
+            area.y + (area.h - mapH * k) / 2
+        );
+        this.map.scale.set(k / stageScale);
+        this.map.position.copyFrom(topLeft);
+        this.map.setLabelScale(
+            Math.max(1, MIN_LABEL_PX / (MAP_LABEL_FONT * k))
+        );
     }
 
     private startMatch(config: GameConfig) {
         const id = ++this.matchId;
+        this.revealed.clear();
         this.colors = Object.fromEntries(
             config.players.map((p, i) => [p.id, PLAYER_COLORS[i]])
         );
 
         this.map?.destroy({ children: true });
-        this.hud?.destroy({ children: true });
 
         this.map = new MapView(this.app.ticker, 1.1);
         this.map.setPlayerColors(this.colors);
@@ -113,10 +140,7 @@ export class ConquestPage extends Page {
             this.regionWaiter(r);
         });
 
-        this.hud = new HudView(this.colors);
-
-        this.addChild(this.map, this.hud);
-        this.layout();
+        this.addChild(this.map);
         this.overlay.close();
 
         this.engine = new GameEngine(
@@ -125,6 +149,9 @@ export class ConquestPage extends Page {
             new LocalQuestionProvider()
         );
         this.engine.start();
+        this.layout();
+        this.status = "";
+        matchHud.set((s) => ({ ...s, visible: true }));
         this.visible = true;
         this.run(id).catch((e) => console.error(e));
     }
@@ -134,16 +161,92 @@ export class ConquestPage extends Page {
         this.regionWaiter = null;
         this.overlay.close();
         this.visible = false;
+        matchHud.set((s) => ({ ...s, visible: false }));
         this.app.stage.emit(ButtonEvent.exitButtonClicked);
     }
 
-    private refresh() {
-        const state = this.engine.getPublicState();
-        this.map.render(state);
-        this.hud.render(
-            this.engine.getState(),
-            this.engine.activePlayer?.id ?? null
-        );
+    /** Renders map and HUD, hiding capitals that haven't been revealed yet. */
+    private refresh(activeId = this.engine.activePlayer?.id ?? null) {
+        const hide = <S extends { territories: GameState["territories"] }>(
+            s: S
+        ): S => ({
+            ...s,
+            territories: Object.fromEntries(
+                Object.entries(s.territories).map(([id, t]) => [
+                    id,
+                    t.isCapital && t.ownerId && !this.revealed.has(t.ownerId)
+                        ? { ...t, ownerId: null, isCapital: false }
+                        : t,
+                ])
+            ),
+        });
+        this.map.render(hide(this.engine.getPublicState()));
+
+        const state = hide(this.engine.getState());
+        matchHud.set((s) => ({
+            ...s,
+            round: state.round,
+            rounds: state.config.rounds,
+            players: state.players.map((p) => {
+                const owned = territoriesOf(state.territories, p.id);
+                return {
+                    id: p.id,
+                    name: p.name,
+                    color: this.colors[p.id],
+                    isBot: p.kind === "bot",
+                    regions: owned.length,
+                    capitalHp: owned.find((t) => t.isCapital)?.hp ?? 0,
+                    eliminated: p.eliminated,
+                    active: p.id === activeId && !p.eliminated,
+                };
+            }),
+        }));
+    }
+
+    /**
+     * Plays capital placements that haven't been shown yet, one player at a
+     * time in turn order. Bots (and random placement) get a short "selecting"
+     * pause first; a capital the human just clicked is animated right away.
+     */
+    private async revealCapitals(alive: () => boolean) {
+        const s = this.engine.getState();
+        for (const playerId of s.turnOrder) {
+            if (this.revealed.has(playerId)) continue;
+            const capital = Object.values(s.territories).find(
+                (t) => t.isCapital && t.ownerId === playerId
+            );
+            if (!capital) continue;
+            const player = s.players.find((p) => p.id === playerId);
+            const regionName = BULGARIA.regions[capital.regionId].name;
+
+            if (player.kind === "bot" || s.config.placement === "random") {
+                this.status =
+                    playerId === HUMAN_ID
+                        ? "Selecting your capital…"
+                        : `${player.name} is selecting a capital…`;
+                this.refresh(playerId);
+                await wait(1100);
+                if (!alive()) return;
+            }
+
+            this.refresh(playerId);
+            sfx.select();
+            await this.map.claim(
+                capital.regionId,
+                this.colors[playerId],
+                () => {
+                    this.revealed.add(playerId);
+                    this.refresh(playerId);
+                }
+            );
+            if (!alive()) return;
+            this.status =
+                playerId === HUMAN_ID
+                    ? `Your capital: ${regionName}`
+                    : `${player.name} chose ${regionName}`;
+            await wait(700);
+            if (!alive()) return;
+        }
     }
 
     private playerName(id: PlayerId | null) {
@@ -179,6 +282,9 @@ export class ConquestPage extends Page {
         const alive = () => id === this.matchId;
         while (alive() && this.engine.phase !== GamePhase.GameOver) {
             this.refresh();
+            await this.revealCapitals(alive);
+            if (!alive()) return;
+            this.refresh();
             switch (this.engine.phase) {
                 case GamePhase.CapitalSelection:
                     await this.capitalSelection();
@@ -195,7 +301,7 @@ export class ConquestPage extends Page {
                     break;
                 case GamePhase.RoundEnd: {
                     const s = this.engine.getState();
-                    this.message.text =
+                    this.status =
                         s.round >= s.config.rounds
                             ? "Final round complete!"
                             : `Round ${s.round} complete`;
@@ -209,15 +315,16 @@ export class ConquestPage extends Page {
         }
         if (!alive()) return;
         this.refresh();
-        this.message.text = "Game over";
+        this.status = "Game over";
         await wait(1200);
         if (!alive()) return;
         this.visible = false;
+        matchHud.set((s) => ({ ...s, visible: false }));
         this.app.stage.emit(GameEvent.matchFinished, this.engine.getState());
     }
 
     private async capitalSelection() {
-        this.message.text = "Choose your capital";
+        this.status = "Choose your capital";
         const region = await this.waitForRegion(
             this.engine.capitalCandidates()
         );
@@ -230,10 +337,10 @@ export class ConquestPage extends Page {
         let target: RegionId;
 
         if (player.kind === "human") {
-            this.message.text = "Your turn — choose a region to attack";
+            this.status = "Your turn — choose a region to attack";
             target = await this.waitForRegion(targets);
         } else {
-            this.message.text = `${player.name} is choosing a target…`;
+            this.status = `${player.name} is choosing a target…`;
             await wait(700);
             target = botChooseTarget(
                 Math.random,
@@ -242,7 +349,7 @@ export class ConquestPage extends Page {
                 player.difficulty ?? Difficulty.Medium
             );
             this.map.setFocus(target);
-            this.message.text = `${player.name} attacks ${BULGARIA.regions[target].name}!`;
+            this.status = `${player.name} attacks ${BULGARIA.regions[target].name}!`;
             await wait(900);
         }
         this.map.setFocus(target);

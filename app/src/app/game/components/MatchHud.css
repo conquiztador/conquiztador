@@ -1,0 +1,146 @@
+/* Real CSS pixels: this lives in #screen-root, not the scaled design area. */
+.hud {
+    position: fixed;
+    z-index: 1;
+    box-sizing: border-box;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    pointer-events: auto;
+}
+
+.hud-side {
+    top: 8px;
+    right: 8px;
+    bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* 8px top + 1px border + 3px = header row starts 12px from the window
+       top, same as the corner controls */
+    padding: 3px 8px 8px;
+    background: rgba(29, 36, 51, 0.92);
+    border: 1px solid #3a4660;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.hud-top {
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    /* header row starts 12px from the top, same as the corner controls */
+    padding: 12px 10px 6px;
+    background: rgba(29, 36, 51, 0.92);
+    border-bottom: 1px solid #3a4660;
+}
+.hud-bottom {
+    left: 8px;
+    right: 8px;
+}
+
+.hud-header {
+    display: flex;
+    align-items: center;
+    /* same height as the corner buttons so Quit centres on the same line */
+    min-height: 36px;
+    gap: 8px;
+    /* leave room for the corner controls (fullscreen + mute) */
+    padding-right: 88px;
+}
+.hud-round {
+    flex: 1;
+    white-space: nowrap;
+    font-weight: bold;
+    font-size: 16px;
+}
+.hud-quit {
+    font: inherit;
+    font-weight: bold;
+    color: #fff;
+    background: #2f6fd6;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+.hud-quit:hover {
+    background: #3d80ea;
+}
+
+.hud-message {
+    min-height: 1.3em;
+    font-weight: bold;
+    color: #ffe066;
+    line-height: 1.3;
+}
+.hud-top .hud-message {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hud-players {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+}
+.hud-bottom .hud-players {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.hud-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #232b3c;
+    border: 1px solid #3a4660;
+    border-radius: 8px;
+    min-width: 0;
+}
+.hud-player.active {
+    background: #2c3a55;
+    border-color: #ffe066;
+    box-shadow: 0 0 0 1px #ffe066;
+}
+.hud-player.eliminated {
+    opacity: 0.55;
+}
+.hud-dot {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+.hud-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.hud-bot {
+    font-size: 12px;
+}
+.hud-stats {
+    display: flex;
+    gap: 6px;
+    flex: none;
+    color: #a8b3c7;
+    font-size: 13px;
+}
+.hud-hp {
+    color: #d64545;
+    letter-spacing: -1px;
+}

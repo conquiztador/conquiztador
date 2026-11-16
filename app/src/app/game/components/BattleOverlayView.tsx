@@ -1,4 +1,4 @@
-import { CSSProperties, FormEvent, useEffect, useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 
 import { Side } from "app/core/types";
 import { css } from "app/ui/store";
@@ -199,6 +199,14 @@ function Mcq({
     );
 }
 
+const PAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "OK"];
+const MAX_DIGITS = 9;
+
+/**
+ * Tie-breaker answer entry. Uses an on-screen number pad and a plain display
+ * (not an <input>) so phones never open the system keyboard over the
+ * question. Physical keyboards still work: digits, Backspace and Enter.
+ */
 function Numeric({
     info,
     step,
@@ -210,10 +218,35 @@ function Numeric({
 }) {
     const [value, setValue] = useState("");
 
-    const submit = (e: FormEvent) => {
-        e.preventDefault();
-        if (value !== "") onAnswer?.(Number(value));
+    const press = (key: string) => {
+        if (!onAnswer) return;
+        if (key === "OK" || key === "Enter") {
+            if (value !== "") onAnswer(Number(value));
+        } else if (key === "⌫" || key === "Backspace") {
+            setValue((v) => v.slice(0, -1));
+        } else if (/^[0-9]$/.test(key)) {
+            setValue((v) =>
+                v.length >= MAX_DIGITS ? v : v === "0" ? key : v + key
+            );
+        }
     };
+
+    // Re-subscribe when value changes so Enter submits the latest value.
+    useEffect(() => {
+        if (!onAnswer) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            press(e.key);
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    });
+
+    const display = value
+        ? Number(value).toLocaleString("en-US")
+        : step.spectating
+        ? "…"
+        : "";
 
     return (
         <>
@@ -223,38 +256,60 @@ function Numeric({
                 phase="Phase 2 · Tie-breaker: closest answer wins, then fastest"
             />
             <Timer info={info} step={step} />
-            <form className="numeric-form" onSubmit={submit}>
-                <input
-                    className="numeric-input"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    autoFocus
-                    placeholder={step.spectating ? "…" : "Your answer"}
-                    disabled={!onAnswer}
-                    value={value}
-                    onChange={(e) =>
-                        setValue(e.target.value.replace(/\D/g, "").slice(0, 9))
-                    }
-                />
-                <button
-                    className="battle-button"
-                    style={
-                        {
-                            "--bg": css(
-                                step.submitted
-                                    ? COLORS.buttonSelected
-                                    : onAnswer && value
-                                    ? COLORS.button
-                                    : COLORS.buttonDisabled
-                            ),
-                        } as CSSProperties
-                    }
-                    disabled={!onAnswer || value === ""}
-                >
-                    {step.submitted ? "Locked in" : "Submit"}
-                </button>
-            </form>
+            <div className="numeric-entry">
+                <div className="numeric-side">
+                    <div
+                        className={`numeric-display${value ? "" : " empty"}`}
+                        aria-live="polite"
+                    >
+                        {display || "Your answer"}
+                    </div>
+                    <button
+                        className="battle-button numeric-submit"
+                        style={
+                            {
+                                "--bg": css(
+                                    step.submitted
+                                        ? COLORS.buttonSelected
+                                        : onAnswer && value
+                                        ? COLORS.button
+                                        : COLORS.buttonDisabled
+                                ),
+                            } as CSSProperties
+                        }
+                        disabled={!onAnswer || value === ""}
+                        onClick={() => press("OK")}
+                    >
+                        {step.submitted ? "Locked in" : "Submit"}
+                    </button>
+                </div>
+                <div className="numeric-pad">
+                    {PAD_KEYS.map((k) => (
+                        <button
+                            key={k}
+                            className="battle-button numeric-key"
+                            style={
+                                {
+                                    "--bg": css(
+                                        k === "OK"
+                                            ? COLORS.buttonSelected
+                                            : k === "⌫"
+                                            ? COLORS.buttonDisabled
+                                            : COLORS.button
+                                    ),
+                                } as CSSProperties
+                            }
+                            disabled={!onAnswer || (k === "OK" && !value)}
+                            onClick={() => press(k)}
+                            aria-label={
+                                k === "⌫" ? "Delete" : k === "OK" ? "Submit" : k
+                            }
+                        >
+                            {k}
+                        </button>
+                    ))}
+                </div>
+            </div>
         </>
     );
 }

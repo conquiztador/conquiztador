@@ -133,30 +133,46 @@
     color: #fff;
 }
 
-.numeric-form {
+.numeric-entry {
     display: flex;
-    gap: 16px;
-    margin-top: 30px;
+    align-items: center;
+    gap: 28px;
+    margin-top: 4px;
 }
-.numeric-input {
+.numeric-side {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
     width: 300px;
-    height: 56px;
+}
+.numeric-display {
+    height: 72px;
+    line-height: 72px;
     box-sizing: border-box;
-    font: inherit;
-    font-size: 32px;
-    text-align: center;
+    font-size: 36px;
     color: #fff;
     background: #0f1420;
-    border: 2px solid #3a4660;
+    border: 2px solid #2f6fd6;
     border-radius: 10px;
-    outline: none;
+    overflow: hidden;
 }
-.numeric-input:focus {
-    border-color: #2f6fd6;
+.numeric-display.empty {
+    font-size: 22px;
+    color: #a8b3c7;
 }
-.numeric-form .battle-button {
-    width: 160px;
-    font-size: 24px;
+.numeric-submit {
+    height: 72px;
+    font-size: 26px;
+}
+.numeric-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 96px);
+    grid-auto-rows: 64px;
+    gap: 10px;
+}
+.numeric-key {
+    font-size: 28px;
+    touch-action: manipulation; /* no double-tap zoom on fast entry */
 }
 
 .numeric-correct {
@@ -234,17 +250,16 @@
 #ui-root[data-orientation="portrait"] .mcq-option {
     min-height: 88px;
 }
-#ui-root[data-orientation="portrait"] .numeric-form {
+#ui-root[data-orientation="portrait"] .numeric-entry {
     flex-direction: column;
-    align-items: center;
+    gap: 20px;
 }
-#ui-root[data-orientation="portrait"] .numeric-input {
+#ui-root[data-orientation="portrait"] .numeric-side {
     width: 400px;
-    height: 72px;
 }
-#ui-root[data-orientation="portrait"] .numeric-form .battle-button {
-    width: 400px;
-    height: 64px;
+#ui-root[data-orientation="portrait"] .numeric-pad {
+    grid-template-columns: repeat(3, 130px);
+    grid-auto-rows: 76px;
 }
 #ui-root[data-orientation="portrait"] .numeric-row {
     width: 100%;

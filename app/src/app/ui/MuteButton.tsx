@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from "react";
 
 import { isMuted, onMuteChange, setMuted } from "app/audio/sfx";
 
-/** Speaker toggle in the top bar; "M" toggles it too. */
+/** Speaker toggle in the corner controls; "M" toggles it too. */
 export function MuteButton() {
     const muted = useSyncExternalStore(onMuteChange, isMuted);
 
@@ -18,7 +18,7 @@ export function MuteButton() {
 
     return (
         <button
-            className="mute-button"
+            className="corner-button"
             title={muted ? "Unmute (M)" : "Mute (M)"}
             aria-label={muted ? "Unmute" : "Mute"}
             onClick={() => setMuted(!muted)}

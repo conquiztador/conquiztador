@@ -4,6 +4,7 @@ body {
 
 #ui-root {
     position: fixed;
+    z-index: 2; /* battle overlay dims the HUD below it */
     top: 0;
     left: 0;
     transform-origin: 0 0;
@@ -13,22 +14,32 @@ body {
     color: #fff;
 }
 
-.mute-button {
-    position: absolute;
-    top: 28px;
-    right: 176px; /* just left of the Quit button */
-    width: 44px;
-    height: 44px;
+/* Real CSS pixels, pinned to the window's top-right corner. */
+.corner-controls {
+    position: fixed;
+    z-index: 3;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 8px;
+}
+.corner-button {
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     border: none;
-    border-radius: 10px;
-    background: rgba(29, 36, 51, 0.8);
+    border-radius: 8px;
+    background: rgba(29, 36, 51, 0.85);
     cursor: pointer;
     pointer-events: auto;
 }
-.mute-button:hover {
+.corner-button svg {
+    width: 20px;
+    height: 20px;
+}
+.corner-button:hover {
     background: rgba(47, 111, 214, 0.9);
 }
