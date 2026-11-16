@@ -1,5 +1,7 @@
 import * as PIXI from "pixi.js";
 
+import { sfx } from "app/audio/sfx";
+
 export const FONT = "Arial";
 
 export const COLORS = {
@@ -88,7 +90,11 @@ export class Button extends PIXI.Container {
 
     /** Registers a click handler that only fires while enabled. */
     onClick(handler: () => void): this {
-        this.on("pointertap", () => this._enabled && handler());
+        this.on("pointertap", () => {
+            if (!this._enabled) return;
+            sfx.click();
+            handler();
+        });
         return this;
     }
 

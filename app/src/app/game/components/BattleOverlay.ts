@@ -1,4 +1,5 @@
 import { McqAnswer, NumericAnswer, Side } from "app/core/types";
+import { sfx } from "app/audio/sfx";
 import { createStore } from "app/ui/store";
 
 import { COLORS, wait } from "../ui";
@@ -80,6 +81,8 @@ export const battleStore = createStore<BattleViewState>({
 });
 
 const SPECTATE_MS = 1800;
+/** Tick each second over the last few seconds of the countdown. */
+const TICK_SECONDS = 3;
 
 /**
  * Drives the battle modal (rendered by BattleOverlayView): shows who fights
@@ -88,6 +91,7 @@ const SPECTATE_MS = 1800;
  */
 export class BattleOverlay {
     private cleanup: (() => void)[] = [];
+    private humanSide: Side | null = null;
 
     async open(info: BattleInfo) {
         this.stopInput();
@@ -97,6 +101,7 @@ export class BattleOverlay {
             seq: s.seq + 1,
             onAnswer: null,
         }));
+        sfx.battleStart();
         await wait(250);
     }
 
@@ -106,8 +111,14 @@ export class BattleOverlay {
     }
 
     /** Big centred announcement inside the panel (e.g. siege chain). */
-    async announce(text: string, color: number = COLORS.gold, ms = 1300) {
+    async announce(
+        text: string,
+        color: number = COLORS.gold,
+        ms = 1300,
+        chime = true
+    ) {
         this.setStep({ kind: "announce", text, color });
+        if (chime) sfx.announce();
         await wait(300 + ms);
     }
 
@@ -117,6 +128,7 @@ export class BattleOverlay {
         opponentResponseMs: number | null,
         timeLimitMs: number
     ): Promise<McqAnswer | null> {
+        this.humanSide = humanSide;
         const timed = this.timed(humanSide, opponentResponseMs, timeLimitMs);
         this.setStep({
             kind: "mcq",
@@ -138,6 +150,10 @@ export class BattleOverlay {
     ) {
         this.stopInput();
         this.patchStep({ reveal: { correctIndex, answers } });
+        if (!this.humanSide) sfx.reveal();
+        else if (answers[this.humanSide]?.optionIndex === correctIndex)
+            sfx.correct();
+        else sfx.wrong();
         await wait(2200);
     }
 
@@ -147,6 +163,7 @@ export class BattleOverlay {
         opponentResponseMs: number | null,
         timeLimitMs: number
     ): Promise<NumericAnswer | null> {
+        this.humanSide = humanSide;
         const timed = this.timed(humanSide, opponentResponseMs, timeLimitMs);
         this.setStep({ kind: "numeric", question, submitted: false, ...timed });
         return this.runTimer(timed, () =>
@@ -163,6 +180,9 @@ export class BattleOverlay {
     ) {
         this.stopInput();
         this.setStep({ kind: "numericReveal", correctValue, answers, winner });
+        if (!this.humanSide) sfx.reveal();
+        else if (winner === this.humanSide) sfx.correct();
+        else sfx.wrong();
         await wait(2600);
     }
 
@@ -196,8 +216,12 @@ export class BattleOverlay {
                 if (done) return;
                 done = true;
                 clearTimeout(timeout);
+                ticks.forEach(clearTimeout);
                 battleStore.set((s) => ({ ...s, onAnswer: null }));
-                if (value !== null) onPicked(value);
+                if (value !== null) {
+                    sfx.lockIn();
+                    onPicked(value);
+                }
                 resolve(
                     value === null
                         ? null
@@ -210,6 +234,11 @@ export class BattleOverlay {
                 );
             };
             const timeout = setTimeout(() => finish(null), timed.limitMs);
+            const ticks = timed.spectating
+                ? []
+                : Array.from({ length: TICK_SECONDS }, (_, i) =>
+                      setTimeout(sfx.tick, timed.limitMs - (i + 1) * 1000)
+                  );
             this.cleanup.push(() => finish(null));
             if (!timed.spectating)
                 battleStore.set((s) => ({ ...s, onAnswer: finish }));

@@ -7,6 +7,7 @@ import LayerManager from "app/managers/LayerManager";
 import { territoriesOf } from "app/core/territory";
 import { GameState } from "app/core/types";
 import { Button, COLORS, label } from "app/game/ui";
+import { sfx } from "app/audio/sfx";
 
 /** Final standings after a match. */
 export class GameOverPage extends Page {
@@ -42,6 +43,8 @@ export class GameOverPage extends Page {
             state.winners.includes(p.id)
         );
         const youWon = state.winners.includes("you");
+        if (youWon) sfx.victory();
+        else sfx.gameLost();
 
         const title =
             winners.length > 1

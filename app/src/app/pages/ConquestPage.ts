@@ -18,6 +18,7 @@ import { HudView } from "app/game/components/HudView";
 import { MapEvent, MapView } from "app/game/components/MapView";
 import { LocalQuestionProvider } from "app/game/questions/LocalQuestionProvider";
 import { Button, COLORS, label, PLAYER_COLORS, wait } from "app/game/ui";
+import { sfx } from "app/audio/sfx";
 
 const NEUTRAL: Combatant = {
     name: "Neutral",
@@ -70,9 +71,11 @@ export class ConquestPage extends Page {
         this.map = new MapView(this.app.ticker, 1.1);
         this.map.position.set(30, 110);
         this.map.setPlayerColors(this.colors);
-        this.map.on(MapEvent.regionSelected, (r: RegionId) =>
-            this.regionWaiter?.(r)
-        );
+        this.map.on(MapEvent.regionSelected, (r: RegionId) => {
+            if (!this.regionWaiter) return;
+            sfx.select();
+            this.regionWaiter(r);
+        });
 
         this.hud = new HudView(this.colors);
         this.hud.position.set(910, 110);
@@ -330,7 +333,10 @@ export class ConquestPage extends Page {
                 r.targetHpAfter === 1 ? "" : "s"
             } left`;
         }
-        await this.overlay.announce(text, color, 1400);
+        if (color === COLORS.correct) sfx.conquer();
+        else if (color === COLORS.wrong) sfx.defeat();
+        else sfx.impact();
+        await this.overlay.announce(text, color, 1400, false);
         this.overlay.close();
         this.map.setFocus(null);
         this.engine.continue();
