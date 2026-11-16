@@ -24,14 +24,17 @@ export default defineConfig(({ mode }) => ({
                 : [],
     },
     server: {
-        // The dev server listens on 8080; nginx serves it on port 80
-        // (see example-nginx.conf), so open the URL without a port.
-        host: "127.0.0.1",
+        // Listen on all interfaces so devices on the local network can
+        // connect via http://<lan-ip>:8080. Locally, nginx serves it on
+        // port 80 as conquiztador.local (see example-nginx.conf).
+        host: true,
         port: 8080,
         strictPort: true,
+        // IPs and localhost are always allowed; named hosts must be listed.
         allowedHosts: [HOST],
         open: `http://${HOST}/`,
-        hmr: { host: HOST, clientPort: 80 },
+        // No HMR host/port override: the client reconnects to whichever
+        // host served the page (nginx proxies the WebSocket upgrade).
     },
     build: {
         sourcemap: true,
