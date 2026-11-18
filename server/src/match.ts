@@ -1,19 +1,26 @@
 import {
+    BattleAids,
     BULGARIA,
     botChooseCapital,
+    botChooseFortify,
     botChooseTarget,
     DeckQuestionProvider,
     Difficulty,
     GameConfig,
     GameEngine,
     GamePhase,
+    GameRuleError,
     GameState,
+    isAnswerCorrect,
     MATCH_TIMING,
     MatchEvent,
     MatchSnapshot,
     PlayerId,
     PointsReason,
     PointsTally,
+    PowerUpEffect,
+    PowerUpGrant,
+    PowerUpKind,
     PublicQuestion,
     QuestionDeck,
     RegionId,
@@ -54,8 +61,20 @@ type Pending =
           phase: GamePhase.BattleMcq | GamePhase.BattleNumeric;
           waiting: Set<PlayerId>;
           startedAt: number;
+          /** Per human still answering: when their time runs out (Extra Time moves it). */
+          deadlines: Map<PlayerId, number>;
+          /** Re-arms the wait for the latest deadline. */
+          reschedule: () => void;
           resolve: () => void;
       };
+
+/** Power-up news to everyone, before its state is attached. */
+type Announcement =
+    | Omit<Extract<MatchEvent, { kind: "powerUpUsed" }>, "state">
+    | Omit<Extract<MatchEvent, { kind: "powerUpGranted" }>, "state">;
+
+/** Grants earned by answering (announced after the answers are shown). */
+const ANSWER_GRANTS = new Set<PowerUpGrant["reason"]>(["correct", "wrong"]);
 
 /**
  * Runs one match on the server: owns the engine, paces every step with
@@ -80,6 +99,16 @@ export class Match {
         battle: Extract<MatchEvent, { kind: "battle" }>;
         question: { event: Extract<MatchEvent, { kind: "question" }>; sentAt: number } | null;
     } | null = null;
+    /**
+     * The last state players were sent. Power-up news from the middle of a
+     * battle is built on it, not on the engine's state, which already holds
+     * the outcome of a battle with no human in it.
+     */
+    private shown: MatchSnapshot | null = null;
+    /** Earned power-ups not announced yet (regions taken / lost wait for the battle result). */
+    private heldGrants: PowerUpGrant[] = [];
+    /** Scout results this turn, re-sent to a player who reconnects at their target prompt. */
+    private readonly scouts = new Map<PlayerId, PowerUpEffect>();
 
     constructor(
         config: GameConfig,
@@ -142,6 +171,38 @@ export class Match {
         if (p.waiting.size === 0) p.resolve();
     }
 
+    /**
+     * Uses a power-up (agents.md §2.5). Fortify and Scout only while the
+     * player is choosing a target; the battle aids only while the server
+     * waits for their answer. What it revealed goes to the player alone.
+     */
+    usePowerUp(playerId: PlayerId, kind: PowerUpKind, regionId?: RegionId): void {
+        const p = this.pending;
+        const onTurn = kind === "fortify" || kind === "scout";
+        // Battle aids only while the player's own time runs (the wait may be longer for the
+        // opponent's Extra Time).
+        const allowed = onTurn
+            ? p?.kind === "region" && p.prompt === "target" && p.playerId === playerId
+            : p?.kind === "answers" &&
+              p.waiting.has(playerId) &&
+              Date.now() <= p.deadlines.get(playerId) + this.timing.answerGraceMs;
+        if (!allowed) throw new RoomError("not_your_turn", onTurn ? "Not your turn" : "No question for you right now");
+        let effect: PowerUpEffect;
+        try {
+            effect = this.engine.usePowerUp(playerId, kind, regionId);
+        } catch (e) {
+            if (e instanceof GameRuleError) throw new RoomError("invalid", e.message);
+            throw e;
+        }
+        if (effect.kind === "extraTime" && p.kind === "answers") {
+            p.deadlines.set(playerId, p.deadlines.get(playerId) + effect.bonusMs);
+            p.reschedule();
+        }
+        if (effect.kind === "scout") this.scouts.set(playerId, effect);
+        this.hooks.send(playerId, { kind: "powerUpEffect", effect });
+        this.broadcast({ kind: "powerUpUsed", playerId, powerUp: kind, state: this.snapshot() });
+    }
+
     /** A player quit or didn't reconnect: a Medium bot plays their seat. */
     replaceWithBot(playerId: PlayerId): void {
         const player = this.engine.getState().players.find((p) => p.id === playerId);
@@ -150,7 +211,9 @@ export class Match {
         const p = this.pending;
         if (p?.kind === "region" && p.playerId === playerId) p.resolve(null);
         if (p?.kind === "answers" && p.waiting.delete(playerId) && p.waiting.size === 0) p.resolve();
-        this.broadcast({ kind: "botTakeover", playerId, state: this.snapshot() });
+        // Mid-battle the engine may already hold the outcome: only the seat changes.
+        const state = this.current && this.shown ? { ...this.shown, players: this.snapshot().players } : this.snapshot();
+        this.broadcast({ kind: "botTakeover", playerId, state });
     }
 
     /** What each human has earned so far (for a match that ends early). */
@@ -164,24 +227,39 @@ export class Match {
             kind: "started",
             matchId: this.id,
             you: playerId,
-            state: this.snapshot(),
+            // Mid-battle: what the others see (the engine may be ahead of the reveal).
+            state: (this.current && this.shown) || this.snapshot(),
             resumed: true,
         });
         const c = this.current;
         if (c) {
             this.hooks.send(playerId, c.battle);
             const q = c.question;
-            const left = q ? q.event.timeMs - (Date.now() - q.sentAt) : 0;
-            if (q && left > 0) this.hooks.send(playerId, { ...q.event, timeMs: left, opponentMs: null });
+            if (q) {
+                const mcq = q.event.question.kind === "mcq";
+                const aids = this.aidsOf(playerId);
+                // The question carries the base time left; the client adds a re-sent Extra Time
+                // effect once, so the question is re-sent while either still runs.
+                const bonus = (mcq ? aids?.mcqBonusMs : aids?.numericBonusMs) ?? 0;
+                const left = q.event.timeMs - (Date.now() - q.sentAt);
+                if (left + bonus > 0) {
+                    this.hooks.send(playerId, { ...q.event, timeMs: Math.max(0, left), opponentMs: null });
+                    for (const effect of aidEffects(aids, mcq))
+                        this.hooks.send(playerId, { kind: "powerUpEffect", effect });
+                }
+            }
         }
         const p = this.pending;
-        if (p?.kind === "region" && p.playerId === playerId)
+        if (p?.kind === "region" && p.playerId === playerId) {
             this.hooks.send(playerId, {
                 kind: "prompt",
                 prompt: p.prompt,
                 options: p.options,
                 timeMs: Math.max(0, p.deadline - Date.now()),
             });
+            const scout = p.prompt === "target" ? this.scouts.get(playerId) : undefined;
+            if (scout) this.hooks.send(playerId, { kind: "powerUpEffect", effect: scout });
+        }
     }
 
     abort(): void {
@@ -198,8 +276,9 @@ export class Match {
     async run(): Promise<MatchResult> {
         const engine = this.engine;
         engine.start();
+        this.shown = this.snapshot();
         for (const id of this.humans())
-            this.hooks.send(id, { kind: "started", matchId: this.id, you: id, state: this.snapshot(), resumed: false });
+            this.hooks.send(id, { kind: "started", matchId: this.id, you: id, state: this.shown, resumed: false });
 
         while (engine.phase !== GamePhase.GameOver) {
             await this.revealCapitals();
@@ -261,6 +340,7 @@ export class Match {
 
     private async chooseTarget() {
         const player = this.engine.activePlayer;
+        this.scouts.clear();
         this.broadcast({ kind: "turn", playerId: player.id });
         let target: RegionId | null = null;
         let auto = false;
@@ -271,6 +351,7 @@ export class Match {
             await this.sleep(this.timing.botThinkMs);
         }
         const bot = this.engine.getState().players.find((p) => p.id === player.id);
+        if (bot.kind === "bot") this.botFortify(bot.id, bot.difficulty ?? Difficulty.Medium);
         target ??= botChooseTarget(
             this.rng,
             this.engine.getState(),
@@ -280,6 +361,50 @@ export class Match {
         this.broadcast({ kind: "target", playerId: player.id, targetId: target, auto });
         if (player.kind === "bot" || auto) await this.sleep(this.timing.botAttackMs);
         this.engine.selectTarget(player.id, target);
+        this.scouts.clear();
+    }
+
+    /** Bots wall their capital when it's threatened (agents.md §2.5). */
+    private botFortify(botId: PlayerId, difficulty: Difficulty) {
+        const region = botChooseFortify(this.rng, this.engine.getState(), botId, difficulty);
+        if (!region) return;
+        this.engine.usePowerUp(botId, "fortify", region);
+        this.broadcast({ kind: "powerUpUsed", playerId: botId, powerUp: "fortify", state: this.snapshot() });
+    }
+
+    /**
+     * Bots use 50/50 and Range Finder inside the engine as a question starts.
+     * Called before the question is shown, so any aid on a side is a bot's.
+     */
+    private announceBotAids(kind: "fiftyFifty" | "rangeFinder") {
+        const b = this.engine.getState().battle;
+        for (const side of ["attacker", "defender"] as Side[]) {
+            const id = this.idOf(side);
+            if (id && b.aids[side]?.[kind]) this.announce({ kind: "powerUpUsed", playerId: id, powerUp: kind });
+        }
+    }
+
+    /** Power-ups earned so far, to announce now; with `reasons`, only those (the rest wait). */
+    private takeGrants(reasons?: Set<PowerUpGrant["reason"]>): PowerUpGrant[] {
+        const all = [...this.heldGrants, ...this.engine.drainGrants()];
+        this.heldGrants = reasons ? all.filter((g) => !reasons.has(g.reason)) : [];
+        return reasons ? all.filter((g) => reasons.has(g.reason)) : all;
+    }
+
+    private announceGrants(grants: PowerUpGrant[]) {
+        for (const g of grants)
+            this.announce({ kind: "powerUpGranted", playerId: g.playerId, powerUp: g.kind, reason: g.reason });
+    }
+
+    /**
+     * Broadcasts power-up news on the last shown state plus this one charge
+     * change, so each news event changes exactly one charge by one and
+     * nothing about a battle's outcome leaks early.
+     */
+    private announce(event: Announcement) {
+        const base = this.shown ?? this.snapshot();
+        const delta = event.kind === "powerUpUsed" ? -1 : 1;
+        this.broadcast({ ...event, state: withCharges(base, [{ playerId: event.playerId, kind: event.powerUp }], delta) });
     }
 
     /** Plays the current battle and any capital chain that follows it. */
@@ -300,6 +425,7 @@ export class Match {
             };
             this.current = { battle: battleEvent, question: null };
             this.broadcast(battleEvent);
+            this.announceBotAids("fiftyFifty");
             await this.sleep(this.timing.battleIntroMs + (b.chainIndex > 1 ? this.timing.chainAnnounceMs : 0));
 
             await this.question(GamePhase.BattleMcq);
@@ -307,13 +433,17 @@ export class Match {
             this.broadcast({ kind: "mcqResult", correctIndex: afterMcq.mcq.correctIndex, answers: afterMcq.mcqAnswers });
             for (const side of ["attacker", "defender"] as Side[]) {
                 const id = this.idOf(side);
-                if (id && afterMcq.mcqAnswers[side]?.optionIndex === afterMcq.mcq.correctIndex)
+                // Same rule as the engine: a late answer isn't correct (Extra Time moves the limit).
+                const limit = s.config.timeLimitMs + (afterMcq.aids[side]?.mcqBonusMs ?? 0);
+                if (id && isAnswerCorrect(afterMcq.mcqAnswers[side], afterMcq.mcq.correctIndex, limit))
                     this.count(id, "correct_answer");
             }
+            this.announceGrants(this.takeGrants(ANSWER_GRANTS));
             await this.sleep(this.timing.mcqRevealMs);
 
             if (afterMcq.numeric) {
                 this.broadcast({ kind: "tieBreaker" });
+                this.announceBotAids("rangeFinder");
                 await this.sleep(this.timing.tieBreakerMs);
                 await this.question(GamePhase.BattleNumeric);
                 const nb = this.engine.getState().battle;
@@ -340,7 +470,10 @@ export class Match {
                 }
             }
             this.current = null;
-            this.broadcast({ kind: "battleResult", result: r, state: this.snapshot() });
+            // Regions taken / lost earn power-ups: the result shows the board, then each grant.
+            const grants = this.takeGrants();
+            this.broadcast({ kind: "battleResult", result: r, state: withCharges(this.snapshot(), grants, -1) });
+            this.announceGrants(grants);
             await this.sleep(this.timing.resultMs);
 
             this.engine.continue();
@@ -392,13 +525,22 @@ export class Match {
             return;
         }
         await new Promise<void>((resolve) => {
-            const timer = setTimeout(() => finish(), timeMs + this.timing.answerGraceMs);
+            const startedAt = Date.now();
+            const deadlines = new Map([...waiting].map((id) => [id, startedAt + timeMs]));
+            let timer: NodeJS.Timeout | undefined;
             const finish = () => {
                 clearTimeout(timer);
                 this.pending = null;
                 resolve();
             };
-            this.pending = { kind: "answers", phase, waiting, startedAt: Date.now(), resolve: finish };
+            // The wait ends at the latest deadline (Extra Time), plus grace for answers in flight.
+            const reschedule = () => {
+                clearTimeout(timer);
+                const end = Math.max(...deadlines.values()) + this.timing.answerGraceMs;
+                timer = setTimeout(finish, end - Date.now());
+            };
+            this.pending = { kind: "answers", phase, waiting, startedAt, deadlines, reschedule, resolve: finish };
+            reschedule();
         });
         this.check();
         if (this.engine.phase === phase) this.engine.expireTimer();
@@ -442,7 +584,14 @@ export class Match {
     }
 
     private broadcast(event: MatchEvent) {
+        if ("state" in event) this.shown = event.state;
         for (const id of this.humans()) this.hooks.send(id, event);
+    }
+
+    /** What the player's side used in the current battle, if they're in it. */
+    private aidsOf(playerId: PlayerId): BattleAids | undefined {
+        const side = this.sideOfOrNull(playerId);
+        return side ? this.engine.getState().battle.aids[side] : undefined;
     }
 
     private isHuman(id: PlayerId) {
@@ -468,6 +617,30 @@ export class Match {
     private sideOf(id: PlayerId): Side {
         return this.sideOfOrNull(id);
     }
+}
+
+/** A copy of `state` with one charge per change added (`delta` 1) or removed (-1). */
+function withCharges(
+    state: MatchSnapshot,
+    changes: { playerId: PlayerId; kind: PowerUpKind }[],
+    delta: 1 | -1
+): MatchSnapshot {
+    const powerUps = { ...state.powerUps };
+    for (const { playerId, kind } of changes) {
+        const charges = powerUps[playerId];
+        if (charges) powerUps[playerId] = { ...charges, [kind]: Math.max(0, charges[kind] + delta) };
+    }
+    return { ...state, powerUps };
+}
+
+/** The private effects behind a side's aids on the open question, re-sent after a reconnect. */
+function aidEffects(aids: BattleAids | undefined, mcq: boolean): PowerUpEffect[] {
+    const out: PowerUpEffect[] = [];
+    if (mcq && aids?.fiftyFifty) out.push({ kind: "fiftyFifty", removed: aids.fiftyFifty });
+    if (!mcq && aids?.rangeFinder) out.push({ kind: "rangeFinder", ...aids.rangeFinder });
+    const bonusMs = mcq ? aids?.mcqBonusMs : aids?.numericBonusMs;
+    if (bonusMs) out.push({ kind: "extraTime", bonusMs });
+    return out;
 }
 
 export function isAborted(e: unknown): boolean {

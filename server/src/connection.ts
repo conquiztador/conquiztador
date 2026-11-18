@@ -109,6 +109,8 @@ export class Connection implements Member {
                 return lobby.matchOf(this).selectRegion(this.user.uuid, message.regionId);
             case "answer":
                 return lobby.matchOf(this).answer(this.user.uuid, message.value);
+            case "usePowerUp":
+                return lobby.matchOf(this).usePowerUp(this.user.uuid, message.kind, message.regionId);
         }
     }
 

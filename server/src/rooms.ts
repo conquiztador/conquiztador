@@ -1,4 +1,5 @@
 import {
+    ALL_POWER_UPS,
     DEFAULT_CONFIG,
     Difficulty,
     GameConfig,
@@ -72,8 +73,25 @@ export interface LobbyOptions {
     /** Questions and points. Without it, rooms reach "playing" but no match runs (tests). */
     django?: Pick<DjangoClient, "deck" | "award">;
     matchTiming?: Partial<MatchTiming>;
+    /** Answer time per question; defaults to the engine's (tests shorten it). */
+    timeLimitMs?: number;
     /** How long a player who dropped mid-match keeps their seat. */
     reconnectMs?: number;
+}
+
+/** Room settings as a caller may give them: power-ups default to all kinds, one each. */
+export type RoomSettingsInput = Omit<RoomSettings, "powerUps"> & Partial<Pick<RoomSettings, "powerUps">>;
+export type SoloSettingsInput = Omit<SoloSettings, "powerUps"> & Partial<Pick<SoloSettings, "powerUps">>;
+
+/** Default supply for new rooms and single-player (agents.md §2.5). */
+export const DEFAULT_POWER_UPS = ALL_POWER_UPS;
+
+/** Validates settings (the protocol schema), copying them so callers can't mutate the room's. */
+function checkSettings(settings: RoomSettingsInput): RoomSettings {
+    const parsed = RoomSettings.safeParse({ ...settings, powerUps: settings.powerUps ?? DEFAULT_POWER_UPS });
+    if (!parsed.success) throw new RoomError("invalid", parsed.error.issues[0]?.message ?? "Invalid settings");
+    const { powerUps } = parsed.data;
+    return { ...parsed.data, powerUps: { mode: powerUps.mode, kinds: [...new Set(powerUps.kinds)] } };
 }
 
 /** agents.md §2.8 */
@@ -184,9 +202,10 @@ export class Lobby {
 
     async create(
         member: Member,
-        request: { name: string; password?: string; settings: RoomSettings; private?: boolean }
+        request: { name: string; password?: string; settings: RoomSettingsInput; private?: boolean }
     ): Promise<Room> {
         this.assertNotInRoom(member);
+        const settings = checkSettings(request.settings);
         let password: Room["password"] = null;
         if (request.password) {
             const salt = randomBytes(16);
@@ -200,8 +219,8 @@ export class Lobby {
             private: request.private ?? false,
             authorUuid: member.user.uuid,
             status: "waiting",
-            settings: { ...request.settings },
-            seats: Array.from({ length: request.settings.seats }, (): Seat => ({ kind: "open", player: null })),
+            settings,
+            seats: Array.from({ length: settings.seats }, (): Seat => ({ kind: "open", player: null })),
             countdownEndsAt: null,
             countdownTimer: null,
             match: null,
@@ -216,7 +235,7 @@ export class Lobby {
     }
 
     /** Single-player: a private room with bots that starts right away. */
-    async startSolo(member: Member, settings: SoloSettings): Promise<Room> {
+    async startSolo(member: Member, settings: SoloSettingsInput): Promise<Room> {
         const room = await this.create(member, {
             name: "solo",
             private: true,
@@ -224,6 +243,7 @@ export class Lobby {
                 rounds: settings.rounds,
                 placement: settings.placement,
                 language: settings.language,
+                powerUps: settings.powerUps,
                 seats: settings.bots.length + 1,
             },
         });
@@ -267,7 +287,7 @@ export class Lobby {
 
     updateSettings(member: Member, patch: Partial<RoomSettings>): void {
         const room = this.authorRoom(member);
-        const next = { ...room.settings, ...patch };
+        const next = checkSettings({ ...room.settings, ...patch });
         if (next.seats !== room.settings.seats) this.resizeSeats(room, next.seats);
         room.settings = next;
         this.changed(room);
@@ -406,6 +426,8 @@ export class Lobby {
             ...DEFAULT_CONFIG,
             rounds: room.settings.rounds,
             placement: room.settings.placement,
+            powerUps: room.settings.powerUps,
+            ...(this.options.timeLimitMs ? { timeLimitMs: this.options.timeLimitMs } : {}),
             players: room.seats.map((s, i) =>
                 s.kind === "bot"
                     ? { id: `bot-${i + 1}`, name: s.name, kind: "bot" as const, difficulty: s.difficulty }

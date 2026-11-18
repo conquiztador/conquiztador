@@ -1,4 +1,4 @@
-import { Difficulty, RoomSettings, RoomView, ServerMessage } from "@conquiztador/core";
+import { ALL_POWER_UPS, Difficulty, NO_POWER_UPS, RoomSettings, RoomView, ServerMessage } from "@conquiztador/core";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -21,7 +21,7 @@ class FakeMember implements Member {
     }
 }
 
-const SETTINGS: RoomSettings = { rounds: 5, placement: "draft", seats: 3, language: "en" };
+const SETTINGS: RoomSettings = { rounds: 5, placement: "draft", seats: 3, language: "en", powerUps: ALL_POWER_UPS };
 const tick = () => new Promise((r) => setTimeout(r, 0));
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -95,6 +95,36 @@ describe("lobby rooms", () => {
         lobby.updateSettings(alice, { rounds: 7, language: "bg" });
         assert.equal(bob.lastRoom()!.settings.rounds, 7);
         assert.equal(bob.lastRoom()!.settings.language, "bg");
+    });
+
+    it("defaults power-ups to one of each kind", async () => {
+        const { lobby, alice } = setup();
+        const { rounds, placement, seats, language } = SETTINGS;
+        await lobby.create(alice, { name: "r", settings: { rounds, placement, seats, language } });
+        assert.deepEqual(alice.lastRoom()!.settings.powerUps, ALL_POWER_UPS);
+        assert.deepEqual(ALL_POWER_UPS, {
+            mode: "oneEach",
+            kinds: ["fiftyFifty", "rangeFinder", "fortify", "extraTime", "scout"],
+        });
+    });
+
+    it("accepts any round count from 1 to 15 and valid power-up settings", async () => {
+        const { lobby, alice, bob } = setup();
+        await lobby.create(alice, { name: "r", settings: SETTINGS });
+        for (const rounds of [1, 4, 15]) {
+            lobby.updateSettings(alice, { rounds });
+            assert.equal(alice.lastRoom()!.settings.rounds, rounds);
+        }
+        for (const rounds of [0, 16, 2.5]) await rejects(() => lobby.updateSettings(alice, { rounds }), "invalid");
+        assert.equal(alice.lastRoom()!.settings.rounds, 15, "a refused change changes nothing");
+
+        lobby.updateSettings(alice, { powerUps: { mode: "reward", kinds: ["scout", "scout", "fortify"] } });
+        assert.deepEqual(alice.lastRoom()!.settings.powerUps, { mode: "reward", kinds: ["scout", "fortify"] });
+        lobby.updateSettings(alice, { powerUps: NO_POWER_UPS });
+        assert.deepEqual(alice.lastRoom()!.settings.powerUps, NO_POWER_UPS);
+        await rejects(() => lobby.updateSettings(alice, { powerUps: { mode: "random", kinds: [] } }), "invalid");
+        await rejects(lobby.create(bob, { name: "r", settings: { ...SETTINGS, rounds: 99 } }), "invalid");
+        assert.equal(lobby.roomOfUser("u-bob"), undefined);
     });
 
     it("turns seats into bots with names and difficulties", async () => {

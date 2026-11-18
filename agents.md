@@ -80,6 +80,10 @@ Players have access to tactical power-ups. Rules and values live in `core/src/po
 
 Power-ups visible to everyone: each player's charges and every use (but only the user sees what a power-up revealed). A failed use costs no charge.
 
+- **When the server accepts a use:** Fortify / Scout only while you hold your target prompt; 50/50, Range Finder and Extra Time only while the server waits for your answer and your own time (incl. grace) hasn't run out. Otherwise `not_your_turn`; a rule violation (no charge, wrong question type, already used, not your region) is `invalid`; outside a match `not_in_room`.
+- **Extra Time in a battle:** the question waits until the latest player's deadline (+ grace); the other player's limit is unchanged, so their late answer still counts as wrong.
+- **Order of news:** bots' 50/50 is announced right after the `battle` event, their Range Finder right after `tieBreaker`; power-ups earned by answering after `mcqResult`, by taking/losing a region after `battleResult`. Each `powerUpUsed` / `powerUpGranted` state differs from the previous state shown by exactly that one charge (so no battle outcome leaks early).
+
 **Supply (room setting `powerUps`: a mode plus the enabled kinds):**
 
 | Mode | Players get |
@@ -133,7 +137,7 @@ Power-ups visible to everyone: each player's charges and every use (but only the
 - **Choice timer:** a human has 20 seconds to choose a capital (draft) or a target; when it expires the server picks one using the bot logic, so no player can stall a match. The HUD shows the seconds left.
 - **Answer timing:** response times are measured by the server, from when it sent the question to when the answer arrives (clients can't claim to be faster).
 - **Quitting:** a player who quits mid-match is replaced by a Medium bot immediately. If no humans are left, the match stops (points earned so far are still saved).
-- **Disconnects:** a player who disconnects mid-match has 60 seconds to reconnect (the client retries automatically and resumes the match where it is, including an open question). Meanwhile their questions time out unanswered. After that, a Medium bot takes over the seat for the rest of the match.
+- **Disconnects:** a player who disconnects mid-match has 60 seconds to reconnect (the client retries automatically and resumes the match where it is, including an open question). Meanwhile their questions time out unanswered. After that, a Medium bot takes over the seat for the rest of the match. On resume the server re-sends the open question with its **base** time left (possibly 0 while Extra Time still runs), then that player's power-up effects for it (50/50, Range Finder, Extra Time — the client adds the bonus once), and at their target prompt their Scout result for this turn.
 - **Before the match:** if anyone leaves during the 5-second countdown, it is cancelled and the room unlocks; the author can also cancel it. If the author leaves, the next player becomes author; an empty room is closed.
 
 ---

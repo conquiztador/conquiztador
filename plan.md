@@ -29,17 +29,17 @@ Branch `power-ups`. Protocol version 2.
 
 ### 1b. Game server
 
-- [ ] `rooms.ts`: default room and solo settings get `powerUps: ALL_POWER_UPS`; pass `settings.powerUps` into `GameConfig`; `updateSettings` accepts `powerUps` and any `rounds` 1–15.
-- [ ] `connection.ts`: route `usePowerUp` to the player's match (errors as `invalid` / `not_your_turn` / `not_in_room`).
-- [ ] `match.ts`:
+- [x] `rooms.ts`: default room and solo settings get `powerUps: ALL_POWER_UPS`; pass `settings.powerUps` into `GameConfig`; `updateSettings` accepts `powerUps` and any `rounds` 1–15.
+- [x] `connection.ts`: route `usePowerUp` to the player's match (errors as `invalid` / `not_your_turn` / `not_in_room`).
+- [x] `match.ts`:
   - `usePowerUp(playerId, kind, regionId?)`: fortify / scout only while that player has the `target` prompt; 50/50, Range Finder, Extra Time only while the server waits for that player's answer. Engine `GameRuleError` → `RoomError("invalid", …)`.
   - Send `powerUpEffect` to the user only; broadcast `powerUpUsed` with a fresh snapshot.
   - Extra Time extends that player's answer deadline by `bonusMs` (the question wait ends at the latest deadline + grace).
-  - Bots: before a bot picks a target, `botChooseFortify` → `engine.usePowerUp` → broadcast `powerUpUsed`. Bot 50/50 / Range Finder happen inside the engine: announce them by comparing bot charges before and after the engine call (no `powerUpEffect` for bots).
+  - Bots: before a bot picks a target, `botChooseFortify` → `engine.usePowerUp` → broadcast `powerUpUsed`. Bot 50/50 / Range Finder happen inside the engine: announced from the battle's `aids` right after `battle` / `tieBreaker` (no `powerUpEffect` for bots).
   - After each question resolves, `engine.drainGrants()` → broadcast `powerUpGranted` per grant.
   - `resume()`: re-send the reconnecting player's `powerUpEffect`s for the open question (from `battle.aids[side]`) and the Scout category if they scouted this turn.
   - A human whose seat a bot takes over keeps their charges for the bot.
-- [ ] Tests (`server/src/*.test.ts`): settings validation and defaults; each power-up through the match flow (effect private, broadcast public, charge spent, invalid moments rejected); Extra Time really extends the wait; bot fortify announced; grants announced in reward mode; resume re-sends effects.
+- [x] Tests (`server/src/*.test.ts`): settings validation and defaults; each power-up through the match flow (effect private, broadcast public, charge spent, invalid moments rejected); Extra Time really extends the wait; bot fortify announced; grants announced in reward mode; resume re-sends effects.
 
 ### 1c. Web app — done (needs a browser play-through, see 1d)
 
@@ -58,7 +58,7 @@ Branch `power-ups`. Protocol version 2.
 
 ## 2. Test debt
 
-- [ ] `server/src/match.test.ts`: flaky "Not your turn" thrown from the scripted bot's `setTimeout` in "keeps a dropped player's seat until the reconnect window ends" (race between prompt and takeover). Make the scripted player ignore stale prompts.
+- [x] `server/src/match.test.ts`: flaky "Not your turn" thrown from the scripted bot's `setTimeout` in "keeps a dropped player's seat until the reconnect window ends" (race between prompt and takeover). Make the scripted player ignore stale prompts.
 - [ ] Backend tests can't run in the current pipenv environment (Django not importable) — fix the environment, then run `pipenv run test`.
 - [ ] App: no tests for pages/components (`ConquestPage`, `MatchHud`, `BattleOverlay`); extract pure logic from them where it's worth testing.
 

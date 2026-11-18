@@ -104,6 +104,23 @@ describe("connection auth", () => {
         c.socket.close();
     });
 
+    it("routes match input, refusing it outside a match", async () => {
+        const c = await connect();
+        c.send({ type: "auth", token: "good-token", protocol: PROTOCOL_VERSION });
+        assert.equal((await c.next()).type, "welcome");
+        for (const message of [
+            { type: "usePowerUp", kind: "fiftyFifty" },
+            { type: "usePowerUp", kind: "fortify", regionId: "sofia" },
+            { type: "selectRegion", regionId: "sofia" },
+        ]) {
+            c.send(message);
+            assert.equal(((await c.next()) as { code: string }).code, "not_in_room");
+        }
+        c.send({ type: "usePowerUp", kind: "teleport" });
+        assert.equal(((await c.next()) as { code: string }).code, "bad_message");
+        c.socket.close();
+    });
+
     it("closes on protocol mismatch", async () => {
         const c = await connect();
         c.send({ type: "auth", token: "good-token", protocol: 999 });
