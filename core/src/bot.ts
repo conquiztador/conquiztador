@@ -33,34 +33,48 @@ function responseTime(rng: Rng): number {
     return randomInt(rng, BOT_MIN_RESPONSE_MS, BOT_MAX_RESPONSE_MS);
 }
 
+/**
+ * A bot "knows" the answer with its difficulty's probability; otherwise it
+ * guesses among the wrong options still shown (50/50 can leave just one, and
+ * then a guess may also land on the right one).
+ */
 export function botAnswerMcq(
     rng: Rng,
     difficulty: Difficulty,
-    question: McqQuestion
+    question: McqQuestion,
+    removed: number[] = []
 ): McqAnswer {
-    const correct = rng() < BOT_CORRECT_PROBABILITY[difficulty];
-    const wrong = question.options
+    const knows = rng() < BOT_CORRECT_PROBABILITY[difficulty];
+    const shown = question.options
         .map((_, i) => i)
-        .filter((i) => i !== question.correctIndex);
-    return {
-        optionIndex: correct ? question.correctIndex : pick(rng, wrong),
-        responseTimeMs: responseTime(rng),
-    };
+        .filter((i) => !removed.includes(i));
+    const wrong = shown.filter((i) => i !== question.correctIndex);
+    let optionIndex = question.correctIndex;
+    if (!knows && wrong.length) {
+        // With options removed the guess is over everything still shown.
+        optionIndex = removed.length ? pick(rng, shown) : pick(rng, wrong);
+    }
+    return { optionIndex, responseTimeMs: responseTime(rng) };
 }
 
+/**
+ * Gaussian guess around the true value. With a Range Finder bracket the
+ * spread is halved and the guess is kept inside the bracket.
+ */
 export function botAnswerNumeric(
     rng: Rng,
     difficulty: Difficulty,
-    question: NumericQuestion
+    question: NumericQuestion,
+    bracket?: { min: number; max: number }
 ): NumericAnswer {
-    const sigma = Math.max(
-        1,
-        Math.abs(question.correctValue) * BOT_NUMERIC_SPREAD[difficulty]
-    );
-    return {
-        value: Math.round(question.correctValue + gaussian(rng) * sigma),
-        responseTimeMs: responseTime(rng),
-    };
+    const sigma =
+        Math.max(
+            1,
+            Math.abs(question.correctValue) * BOT_NUMERIC_SPREAD[difficulty]
+        ) * (bracket ? 0.5 : 1);
+    let value = Math.round(question.correctValue + gaussian(rng) * sigma);
+    if (bracket) value = Math.min(bracket.max, Math.max(bracket.min, value));
+    return { value, responseTimeMs: responseTime(rng) };
 }
 
 /** Higher = more attractive. Exported for tests and debugging. */

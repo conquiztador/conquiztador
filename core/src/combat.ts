@@ -2,7 +2,14 @@ import { McqAnswer, NumericAnswer, Side } from "./types";
 
 export type McqOutcome = Side | "tiebreak";
 
-function isAnswerCorrect(
+/** One limit for both sides, or a limit per side (Extra Time). */
+export type TimeLimit = number | Record<Side, number>;
+
+export function limitFor(limit: TimeLimit, side: Side): number {
+    return typeof limit === "number" ? limit : limit[side];
+}
+
+export function isAnswerCorrect(
     answer: McqAnswer | undefined,
     correctIndex: number,
     timeLimitMs: number
@@ -22,10 +29,18 @@ export function resolveMcq(
     attacker: McqAnswer | undefined,
     defender: McqAnswer | undefined,
     correctIndex: number,
-    timeLimitMs: number
+    timeLimitMs: TimeLimit
 ): McqOutcome {
-    const a = isAnswerCorrect(attacker, correctIndex, timeLimitMs);
-    const d = isAnswerCorrect(defender, correctIndex, timeLimitMs);
+    const a = isAnswerCorrect(
+        attacker,
+        correctIndex,
+        limitFor(timeLimitMs, "attacker")
+    );
+    const d = isAnswerCorrect(
+        defender,
+        correctIndex,
+        limitFor(timeLimitMs, "defender")
+    );
 
     if (!a) return "defender";
     if (!d) return "attacker";
@@ -53,10 +68,10 @@ export function resolveNumeric(
     attacker: NumericAnswer | undefined,
     defender: NumericAnswer | undefined,
     correctValue: number,
-    timeLimitMs: number
+    timeLimitMs: TimeLimit
 ): Side {
-    const aValid = validNumeric(attacker, timeLimitMs);
-    const dValid = validNumeric(defender, timeLimitMs);
+    const aValid = validNumeric(attacker, limitFor(timeLimitMs, "attacker"));
+    const dValid = validNumeric(defender, limitFor(timeLimitMs, "defender"));
 
     if (!aValid) return "defender";
     if (!dValid) return "attacker";

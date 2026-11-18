@@ -1,5 +1,18 @@
 import { botAnswerMcq, botAnswerNumeric, botChooseCapital } from "./bot";
-import { resolveMcq, resolveNumeric } from "./combat";
+import { isAnswerCorrect, resolveMcq, resolveNumeric } from "./combat";
+import {
+    botWantsFiftyFifty,
+    EXTRA_TIME_MS,
+    emptyInventory,
+    emptyProgress,
+    fiftyFiftyRemoved,
+    grantableKind,
+    MILESTONE_REASON,
+    milestoneEarned,
+    NO_POWER_UPS,
+    rangeFinderBracket,
+    startingInventory,
+} from "./powerUps";
 import { Rng, shuffle } from "./rng";
 import {
     applyAttackerWin,
@@ -23,6 +36,10 @@ import {
     NumericQuestion,
     Player,
     PlayerId,
+    PowerUpEffect,
+    PowerUpGrant,
+    PowerUpKind,
+    PowerUpProgress,
     RegionId,
     Side,
     STANDARD_HP,
@@ -43,13 +60,16 @@ export const DEFAULT_CONFIG: Omit<GameConfig, "players"> = {
     neutralDifficulty: Difficulty.Medium,
     timeLimitMs: 15000,
     rotateTurnOrder: true,
+    powerUps: NO_POWER_UPS,
 };
 
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 5;
 
 /** Client-safe battle view: correct answers are hidden until the battle is resolved. */
-export type PublicBattleState = Omit<BattleState, "mcq" | "numeric"> & {
+export type PublicBattleState = Omit<BattleState, "mcq" | "numeric" | "aids"> & {
+    /** Only present once the battle is resolved (aids reveal answers). */
+    aids?: BattleState["aids"];
     mcq: Omit<McqQuestion, "correctIndex"> & { correctIndex?: number };
     numeric:
         | (Omit<NumericQuestion, "correctValue"> & { correctValue?: number })
@@ -69,6 +89,10 @@ function clone<T>(value: T): T {
  */
 export class GameEngine {
     private state: GameState;
+    /** A question drawn early by Scout, used for that player's next battle. */
+    private scouted: { playerId: PlayerId; mcq: McqQuestion } | null = null;
+    /** Power-ups earned since the last drainGrants(). */
+    private grants: PowerUpGrant[] = [];
 
     constructor(
         config: GameConfig,
@@ -109,6 +133,12 @@ export class GameEngine {
             turnIndex: 0,
             battle: null,
             winners: [],
+            powerUps: Object.fromEntries(
+                config.players.map((p) => [p.id, emptyInventory()])
+            ),
+            powerUpProgress: Object.fromEntries(
+                config.players.map((p) => [p.id, emptyProgress()])
+            ),
         };
     }
 
@@ -125,6 +155,7 @@ export class GameEngine {
             const mcqDone = !!this.state.battle.numeric;
             if (!mcqDone) delete b.mcq.correctIndex;
             if (b.numeric) delete b.numeric.correctValue;
+            delete b.aids;
         }
         return s;
     }
@@ -170,6 +201,11 @@ export class GameEngine {
     start(): void {
         this.expectPhase(GamePhase.Lobby);
         this.state.round = 1;
+        for (const p of this.state.players)
+            this.state.powerUps[p.id] = startingInventory(
+                this.rng,
+                this.state.config.powerUps
+            );
         this.state.turnOrder = shuffle(
             this.rng,
             this.state.players.map((p) => p.id)
@@ -239,6 +275,7 @@ export class GameEngine {
     /** Moves to the next active player who can attack, or to ROUND_END. */
     private advanceTurn() {
         this.state.battle = null;
+        this.scouted = null;
         const order = this.state.turnOrder;
         while (++this.state.turnIndex < order.length) {
             const p = this.player(order[this.state.turnIndex]);
@@ -264,18 +301,25 @@ export class GameEngine {
         targetId: RegionId,
         chain: number
     ) {
+        const scouted =
+            chain === 1 && this.scouted?.playerId === attackerId
+                ? this.scouted.mcq
+                : null;
+        this.scouted = null;
         this.state.battle = {
             attackerId,
             defenderId: this.state.territories[targetId].ownerId,
             targetId,
             chainIndex: chain,
-            mcq: this.questions.nextMcq(),
+            mcq: scouted ?? this.questions.nextMcq(),
             mcqAnswers: {},
             numeric: null,
             numericAnswers: {},
+            aids: {},
             result: null,
         };
         this.state.phase = GamePhase.BattleMcq;
+        this.botPowerUps();
         this.fillBotAnswers();
         this.tryResolve();
     }
@@ -305,18 +349,18 @@ export class GameEngine {
     /** Called when the question timer runs out: missing answers count as no answer. */
     expireTimer(): void {
         const b = this.state.battle;
-        const timedOut = {
+        const timedOut = (side: Side) => ({
             optionIndex: null as number | null,
             value: null as number | null,
-            responseTimeMs: this.state.config.timeLimitMs + 1,
-        };
+            responseTimeMs: this.limits()[side] + 1,
+        });
         if (this.state.phase === GamePhase.BattleMcq) {
             for (const side of ["attacker", "defender"] as Side[]) {
-                b.mcqAnswers[side] ??= timedOut;
+                b.mcqAnswers[side] ??= timedOut(side);
             }
         } else if (this.state.phase === GamePhase.BattleNumeric) {
             for (const side of ["attacker", "defender"] as Side[]) {
-                b.numericAnswers[side] ??= timedOut;
+                b.numericAnswers[side] ??= timedOut(side);
             }
         } else {
             throw new GameRuleError("No active question");
@@ -333,13 +377,15 @@ export class GameEngine {
                 b.mcqAnswers[side] ??= botAnswerMcq(
                     this.rng,
                     difficulty,
-                    b.mcq
+                    b.mcq,
+                    b.aids[side]?.fiftyFifty
                 );
             } else if (this.state.phase === GamePhase.BattleNumeric) {
                 b.numericAnswers[side] ??= botAnswerNumeric(
                     this.rng,
                     difficulty,
-                    b.numeric
+                    b.numeric,
+                    b.aids[side]?.rangeFinder
                 );
             }
         }
@@ -347,10 +393,18 @@ export class GameEngine {
 
     private tryResolve() {
         const b = this.state.battle;
-        const limit = this.state.config.timeLimitMs;
+        const limit = this.limits();
 
         if (this.state.phase === GamePhase.BattleMcq) {
             if (!b.mcqAnswers.attacker || !b.mcqAnswers.defender) return;
+            for (const side of ["attacker", "defender"] as Side[]) {
+                const ok = isAnswerCorrect(
+                    b.mcqAnswers[side],
+                    b.mcq.correctIndex,
+                    limit[side]
+                );
+                this.milestone(this.idOf(side), ok ? "correct" : "wrong");
+            }
             const outcome = resolveMcq(
                 b.mcqAnswers.attacker,
                 b.mcqAnswers.defender,
@@ -360,6 +414,7 @@ export class GameEngine {
             if (outcome === "tiebreak") {
                 b.numeric = this.questions.nextNumeric();
                 this.state.phase = GamePhase.BattleNumeric;
+                this.botPowerUps();
                 this.fillBotAnswers();
                 this.tryResolve();
             } else {
@@ -402,6 +457,11 @@ export class GameEngine {
             this.state.territories = outcome.territories;
             if (outcome.eliminatedPlayerId) {
                 this.player(outcome.eliminatedPlayerId).eliminated = true;
+            }
+            if (outcome.captured) {
+                this.milestone(b.attackerId, "taken");
+                if (!outcome.eliminatedPlayerId)
+                    this.milestone(b.defenderId, "lost");
             }
             result = {
                 ...result,
@@ -468,7 +528,162 @@ export class GameEngine {
         this.state.phase = GamePhase.GameOver;
     }
 
+    // ---------------------------------------------------------------- power-ups
+
+    /** Power-ups earned since the last call (for the server to announce). */
+    drainGrants(): PowerUpGrant[] {
+        const g = this.grants;
+        this.grants = [];
+        return g;
+    }
+
+    /**
+     * Uses one charge of a power-up. Returns what it revealed, which only the
+     * player who used it may see. Throws GameRuleError if it can't be used now.
+     *
+     * - fiftyFifty / extraTime: during a question you're answering, before you answer.
+     * - rangeFinder: during the numeric tie-breaker, before you answer.
+     * - fortify / scout: on your turn, before choosing a target.
+     */
+    usePowerUp(
+        playerId: PlayerId,
+        kind: PowerUpKind,
+        regionId?: RegionId
+    ): PowerUpEffect {
+        const inventory = this.state.powerUps[playerId];
+        if (!inventory) throw new GameRuleError(`Unknown player ${playerId}`);
+        if (inventory[kind] < 1)
+            throw new GameRuleError(`No ${kind} power-up left`);
+
+        let effect: PowerUpEffect;
+        switch (kind) {
+            case "fortify":
+            case "scout":
+                this.expectPhase(GamePhase.TurnSelectTarget);
+                this.expectActive(playerId);
+                effect =
+                    kind === "fortify"
+                        ? this.fortify(playerId, regionId)
+                        : this.scout(playerId);
+                break;
+            case "fiftyFifty":
+            case "rangeFinder":
+            case "extraTime":
+                effect = this.battleAid(playerId, kind);
+                break;
+            default:
+                throw new GameRuleError(`Unknown power-up ${kind as string}`);
+        }
+        inventory[kind]--;
+        return effect;
+    }
+
+    private fortify(playerId: PlayerId, regionId?: RegionId): PowerUpEffect {
+        const t = regionId ? this.state.territories[regionId] : undefined;
+        if (!t || t.ownerId !== playerId)
+            throw new GameRuleError("You can only fortify your own region");
+        if (t.walled) throw new GameRuleError("Already fortified");
+        t.walled = true;
+        return { kind: "fortify", regionId };
+    }
+
+    private scout(playerId: PlayerId): PowerUpEffect {
+        if (this.scouted?.playerId === playerId)
+            throw new GameRuleError("Already scouted this turn");
+        this.scouted = { playerId, mcq: this.questions.nextMcq() };
+        return { kind: "scout", category: this.scouted.mcq.category ?? null };
+    }
+
+    private battleAid(
+        playerId: PlayerId,
+        kind: "fiftyFifty" | "rangeFinder" | "extraTime"
+    ): PowerUpEffect {
+        const phase = this.state.phase;
+        if (phase !== GamePhase.BattleMcq && phase !== GamePhase.BattleNumeric)
+            throw new GameRuleError("No question to use that on");
+        const b = this.state.battle;
+        const side = this.sideOf(playerId);
+        const mcq = phase === GamePhase.BattleMcq;
+        if ((mcq ? b.mcqAnswers : b.numericAnswers)[side])
+            throw new GameRuleError("Already answered");
+        const aids = (b.aids[side] ??= {});
+
+        if (kind === "fiftyFifty") {
+            if (!mcq) throw new GameRuleError("50/50 is for multiple choice");
+            if (aids.fiftyFifty) throw new GameRuleError("Already used");
+            aids.fiftyFifty = fiftyFiftyRemoved(this.rng, b.mcq);
+            return { kind, removed: aids.fiftyFifty };
+        }
+        if (kind === "rangeFinder") {
+            if (mcq) throw new GameRuleError("Range Finder is for the tie-breaker");
+            if (aids.rangeFinder) throw new GameRuleError("Already used");
+            aids.rangeFinder = rangeFinderBracket(
+                this.rng,
+                b.numeric.correctValue
+            );
+            return { kind, ...aids.rangeFinder };
+        }
+        const key = mcq ? "mcqBonusMs" : "numericBonusMs";
+        if (aids[key]) throw new GameRuleError("Already used");
+        aids[key] = EXTRA_TIME_MS;
+        return { kind, bonusMs: EXTRA_TIME_MS };
+    }
+
+    /** Bots use 50/50 and Range Finder as a question starts (agents.md §3.3). */
+    private botPowerUps() {
+        const b = this.state.battle;
+        for (const side of ["attacker", "defender"] as Side[]) {
+            const id = this.idOf(side);
+            if (id === null || this.player(id).kind !== "bot") continue;
+            const inv = this.state.powerUps[id];
+            if (this.state.phase === GamePhase.BattleMcq) {
+                if (
+                    inv.fiftyFifty > 0 &&
+                    botWantsFiftyFifty(this.rng, this.state, b)
+                )
+                    this.usePowerUp(id, "fiftyFifty");
+            } else if (inv.rangeFinder > 0) {
+                this.usePowerUp(id, "rangeFinder");
+            }
+        }
+    }
+
+    private milestone(id: PlayerId | null, event: keyof PowerUpProgress) {
+        if (id === null) return;
+        const settings = this.state.config.powerUps;
+        if (!milestoneEarned(settings, this.state.powerUpProgress[id], event))
+            return;
+        const inv = this.state.powerUps[id];
+        const kind = grantableKind(this.rng, settings, inv);
+        if (!kind) return;
+        inv[kind]++;
+        this.grants.push({
+            playerId: id,
+            kind,
+            reason: MILESTONE_REASON[event],
+        });
+    }
+
+    /** Answer time limit per side for the current question. */
+    private limits(): Record<Side, number> {
+        const base = this.state.config.timeLimitMs;
+        const b = this.state.battle;
+        const key =
+            this.state.phase === GamePhase.BattleNumeric
+                ? "numericBonusMs"
+                : "mcqBonusMs";
+        return {
+            attacker: base + (b?.aids.attacker?.[key] ?? 0),
+            defender: base + (b?.aids.defender?.[key] ?? 0),
+        };
+    }
+
     // ---------------------------------------------------------------- helpers
+
+    private idOf(side: Side): PlayerId | null {
+        const b = this.state.battle;
+        return side === "attacker" ? b.attackerId : b.defenderId;
+    }
 
     private activePlayers(): Player[] {
         return this.state.players.filter((p) => !p.eliminated);

@@ -21,6 +21,77 @@ export enum Difficulty {
 export type PlacementMode = "random" | "draft";
 export type CapitalCaptureRule = "transfer" | "neutral";
 
+/** Power-ups (agents.md §2.5). */
+export const POWER_UP_KINDS = [
+    "fiftyFifty",
+    "rangeFinder",
+    "fortify",
+    "extraTime",
+    "scout",
+] as const;
+export type PowerUpKind = (typeof POWER_UP_KINDS)[number];
+
+/**
+ * How players get power-ups:
+ * - none: never.
+ * - oneEach: one charge of each enabled kind at the start.
+ * - random: a few random charges (of enabled kinds) at the start.
+ * - reward: none at the start; earned for correct answers and regions taken.
+ * - catchUp: none at the start; earned for wrong answers and regions lost.
+ */
+export const POWER_UP_MODES = [
+    "none",
+    "oneEach",
+    "random",
+    "reward",
+    "catchUp",
+] as const;
+export type PowerUpMode = (typeof POWER_UP_MODES)[number];
+
+export interface PowerUpSettings {
+    mode: PowerUpMode;
+    /** Which kinds are in play (at least one unless mode is "none"). */
+    kinds: PowerUpKind[];
+}
+
+/** Charges a player holds, by kind. */
+export type PowerUpInventory = Record<PowerUpKind, number>;
+
+/** Milestone counters for the reward / catch-up modes. */
+export interface PowerUpProgress {
+    correct: number;
+    wrong: number;
+    taken: number;
+    lost: number;
+}
+
+export type PowerUpGrantReason = "start" | "correct" | "wrong" | "taken" | "lost";
+
+export interface PowerUpGrant {
+    playerId: PlayerId;
+    kind: PowerUpKind;
+    reason: PowerUpGrantReason;
+}
+
+/** What using a power-up revealed, for the player who used it only. */
+export type PowerUpEffect =
+    | { kind: "fiftyFifty"; removed: number[] }
+    | { kind: "rangeFinder"; min: number; max: number }
+    | { kind: "extraTime"; bonusMs: number }
+    | { kind: "fortify"; regionId: RegionId }
+    | { kind: "scout"; category: string | null };
+
+/** Help a side has in the current battle (hidden from other players). */
+export interface BattleAids {
+    /** Option indices removed by 50/50. */
+    fiftyFifty?: number[];
+    rangeFinder?: { min: number; max: number };
+    /** Extra answer time on the multiple-choice question. */
+    mcqBonusMs?: number;
+    /** Extra answer time on the numeric question. */
+    numericBonusMs?: number;
+}
+
 export interface Region {
     id: RegionId;
     name: string;
@@ -52,6 +123,7 @@ export interface GameConfig {
     timeLimitMs: number;
     /** Rotate turn order each round so the same player doesn't always go first. */
     rotateTurnOrder: boolean;
+    powerUps: PowerUpSettings;
 }
 
 export const CAPITAL_HP = 3;
@@ -115,6 +187,8 @@ export interface BattleState {
     mcqAnswers: Partial<Record<Side, McqAnswer>>;
     numeric: NumericQuestion | null;
     numericAnswers: Partial<Record<Side, NumericAnswer>>;
+    /** Power-ups used in this battle, per side. */
+    aids: Partial<Record<Side, BattleAids>>;
     result: BattleResult | null;
 }
 
@@ -129,4 +203,7 @@ export interface GameState {
     turnIndex: number;
     battle: BattleState | null;
     winners: PlayerId[];
+    /** Power-up charges per player (public: everyone sees everyone's). */
+    powerUps: Record<PlayerId, PowerUpInventory>;
+    powerUpProgress: Record<PlayerId, PowerUpProgress>;
 }

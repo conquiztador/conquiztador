@@ -19,7 +19,8 @@
 1. **Lobby Configuration:**
    - Select Game Mode (Single-Player / Multiplayer). Multiplayer setup happens in a room (§2.6).
    - Select Player Count (2–5 participants).
-   - Select Match Length (3, 5, 7, or custom N rounds).
+   - Select Match Length (presets 3, 5, 7, or any custom whole number from 1 to 15).
+   - Select power-ups: supply mode and which kinds are in play (§2.5).
    - Select Starting Placement Mode: **Random** or **Draft/Selected** (players pick their starting Capital region in turn order).
    - Capitals may not border each other: at least one region must separate any two capitals.
 2. **Map Data (Bulgaria):**
@@ -69,13 +70,31 @@ Battles consist of up to two phases:
 
 ### 2.5 Power-Ups & Modifiers
 
-Players have access to tactical power-ups (limited uses per match or earned via streak/territory milestones):
+Players have access to tactical power-ups. Rules and values live in `core/src/powerUps.ts`.
 
-- **50/50 (Hint):** Eliminates two incorrect answers during a Multiple-Choice phase.
-- **Range Finder / Proximity Hint:** Narrows the acceptable range or gives an order-of-magnitude clue during a Numerical phase.
-- **Fortify / Wall:** Places a defensive barrier on an owned territory. Requires an extra successful attack to breach, or blocks attacks for 1 round.
-- **Extra Time:** Adds +5 seconds to the player's question timer.
-- **Spy / Scout:** Reveals whether the opponent has answered or shows the category of the upcoming question before selecting a territory.
+- **50/50 (Hint):** During a multiple-choice question you're answering (before you answer), hides two wrong options. Once per question.
+- **Range Finder:** During the numeric tie-breaker (before you answer), shows an integer bracket containing the answer, about ±25% of it wide (at least 4 wide) and randomly placed, so the answer isn't always in the middle.
+- **Fortify / Wall:** A free action on your turn, before choosing a target: walls one of your regions. The next successful attack on it only breaks the wall (no HP lost). The wall lasts until it is breached. A region can hold one wall.
+- **Extra Time:** Adds 5 seconds to **your own** timer for the current question only (multiple-choice or numeric). The response time used for the tie-breaker is still the real time.
+- **Scout:** On your turn, before choosing a target: shows the category of the question your next battle will use (the question is drawn now and kept for that battle; it doesn't carry into capital-chain follow-ups). Whether the opponent has answered is always shown to everyone, so Scout doesn't cover that.
+
+Power-ups visible to everyone: each player's charges and every use (but only the user sees what a power-up revealed). A failed use costs no charge.
+
+**Supply (room setting `powerUps`: a mode plus the enabled kinds):**
+
+| Mode | Players get |
+| --- | --- |
+| `none` | No power-ups. |
+| `oneEach` | One charge of each enabled kind at the start. |
+| `random` | 3 random charges of enabled kinds at the start (kinds may repeat). |
+| `reward` | Nothing at the start; a random enabled power-up for every 3rd correct multiple-choice answer and every 2nd region taken. |
+| `catchUp` | Nothing at the start; a random enabled power-up for every 2nd wrong multiple-choice answer (including timeouts) and every region lost. |
+
+- A player never holds more than 3 charges of one kind (earned ones beyond that are skipped).
+- Neutral defenders never get power-ups. Bots get them like players.
+- Default for new rooms and single-player: `oneEach` with all five kinds.
+
+**Bots** (§3.3) use power-ups by simple rules: Fortify on their own capital when it borders another player's land and isn't walled yet (Easy bots only half the time); 50/50 in every capital battle and in 20% of other battles; Range Finder in every tie-breaker. They don't use Extra Time or Scout (they gain nothing from them). With 50/50 a bot that doesn't "know" the answer guesses between the two options left; with Range Finder its numeric spread is halved and kept inside the bracket.
 
 ### 2.6 Multiplayer Rooms
 
@@ -83,7 +102,7 @@ Players have access to tactical power-ups (limited uses per match or earned via 
 2. **Access:** A room is either **open** (anyone can join) or **protected with a password** (joining requires the password).
 3. **Joining:** Players join a room by taking a free seat that is open for players.
 4. **Room author (host):** The player who created the room controls it:
-   - **Settings:** match length, placement mode, number of seats (2–5) and **question language** (all players in a room get questions from the same language pool; each player still sees the UI in their own language).
+   - **Settings:** match length, placement mode, number of seats (2–5), power-ups (§2.5) and **question language** (all players in a room get questions from the same language pool; each player still sees the UI in their own language).
    - **Seats:** each seat is either **open for a player** or a **Bot** with its own difficulty (**Easy**, **Medium**, **Hard**). Turning an occupied seat into a bot removes that player from the seat.
 5. **Locking & start:** When every seat is filled (by a player or a bot), the author can **lock** the room. A short **5-second countdown** follows, then the match starts.
 6. **After the match:** the room reopens with the same seats, so the players can go again (the author locks it again). A seat whose player quit mid-match stays a bot.

@@ -7,6 +7,11 @@ import {
     McqAnswer,
     NumericAnswer,
     PlayerId,
+    POWER_UP_KINDS,
+    POWER_UP_MODES,
+    PowerUpEffect,
+    PowerUpGrantReason,
+    PowerUpKind as PowerUpKindType,
     RegionId,
     Side,
 } from "./types";
@@ -20,7 +25,7 @@ import {
  * extend the two unions below.
  */
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 // ---------------------------------------------------------------- client → server
 
@@ -37,18 +42,33 @@ export const PingMessage = z.object({ type: z.literal("ping") });
 
 export const ROOM_SEATS_MIN = 2;
 export const ROOM_SEATS_MAX = 5;
+/** Preset match lengths (agents.md §2.1); any whole number in range is allowed. */
 export const ROOM_ROUNDS = [3, 5, 7] as const;
+export const ROUNDS_MIN = 1;
+export const ROUNDS_MAX = 15;
 export const ROOM_COUNTDOWN_MS = 5000;
 
 export const QuestionLanguage = z.enum(["en", "bg"]);
 export type QuestionLanguage = z.infer<typeof QuestionLanguage>;
 
+export const PowerUpKindSchema = z.enum(POWER_UP_KINDS);
+export const PowerUpSettingsSchema = z
+    .object({
+        mode: z.enum(POWER_UP_MODES),
+        kinds: z.array(PowerUpKindSchema).max(POWER_UP_KINDS.length),
+    })
+    .refine((p) => p.mode === "none" || p.kinds.length > 0, {
+        message: "Choose at least one power-up",
+        path: ["kinds"],
+    });
+
 export const RoomSettings = z.object({
-    rounds: z.union([z.literal(3), z.literal(5), z.literal(7)]),
+    rounds: z.number().int().min(ROUNDS_MIN).max(ROUNDS_MAX),
     placement: z.enum(["draft", "random"]),
     seats: z.number().int().min(ROOM_SEATS_MIN).max(ROOM_SEATS_MAX),
     /** Pool every player's questions come from. */
     language: QuestionLanguage,
+    powerUps: PowerUpSettingsSchema,
 });
 export type RoomSettings = z.infer<typeof RoomSettings>;
 
@@ -147,6 +167,7 @@ export const SoloSettings = z.object({
     rounds: RoomSettings.shape.rounds,
     placement: RoomSettings.shape.placement,
     language: QuestionLanguage,
+    powerUps: PowerUpSettingsSchema,
     /** One entry per opponent (1–4). */
     bots: z.array(z.enum(Difficulty)).min(1).max(ROOM_SEATS_MAX - 1),
 });
@@ -162,6 +183,15 @@ export const SelectRegionMessage = z.object({
     type: z.literal("selectRegion"),
     regionId: z.string().min(1).max(64),
 });
+/**
+ * Use a power-up (agents.md §2.5). `regionId` is the region to fortify.
+ * The server answers with a private `powerUpEffect` event, or an error.
+ */
+export const UsePowerUpMessage = z.object({
+    type: z.literal("usePowerUp"),
+    kind: PowerUpKindSchema,
+    regionId: z.string().min(1).max(64).optional(),
+});
 /** Option index (multiple choice) or the number (tie-breaker). */
 export const AnswerMessage = z.object({
     type: z.literal("answer"),
@@ -172,6 +202,7 @@ export const ClientMessage = z.discriminatedUnion("type", [
     StartSoloMessage,
     SelectRegionMessage,
     AnswerMessage,
+    UsePowerUpMessage,
     AuthMessage,
     PingMessage,
     WatchRoomsMessage,
@@ -313,6 +344,27 @@ export type MatchEvent =
       }
     | { kind: "battleResult"; result: BattleResult; state: MatchSnapshot }
     | { kind: "roundEnd"; round: number; final: boolean }
+    /**
+     * Someone used a power-up (to everyone). `state` carries the new charges
+     * and, for fortify, the wall. What it revealed goes only to the user, in
+     * `powerUpEffect`.
+     */
+    | {
+          kind: "powerUpUsed";
+          playerId: PlayerId;
+          powerUp: PowerUpKindType;
+          state: MatchSnapshot;
+      }
+    /** Private: what the power-up you used revealed or changed. */
+    | { kind: "powerUpEffect"; effect: PowerUpEffect }
+    /** Someone earned a power-up (reward / catch-up modes), to everyone. */
+    | {
+          kind: "powerUpGranted";
+          playerId: PlayerId;
+          powerUp: PowerUpKindType;
+          reason: PowerUpGrantReason;
+          state: MatchSnapshot;
+      }
     /** A player quit or didn't come back; a bot plays for them now. */
     | { kind: "botTakeover"; playerId: PlayerId; state: MatchSnapshot }
     | {
