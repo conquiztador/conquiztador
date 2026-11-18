@@ -3,7 +3,9 @@ import { createRoot } from "react-dom/client";
 
 import { BattleOverlayView } from "app/game/components/BattleOverlayView";
 import { MatchHudView } from "app/game/components/MatchHudView";
+import { PowerUpToast } from "app/game/components/PowerUpBar";
 import { MultiplayerView } from "app/multiplayer/MultiplayerView";
+import { LobbyView } from "app/settings/LobbyView";
 import { CornerControls } from "./CornerControls";
 
 /**
@@ -22,6 +24,8 @@ export function mountUi(
     createRoot(screenRoot).render(
         <StrictMode>
             <MatchHudView />
+            <PowerUpToast />
+            <LobbyView />
             <MultiplayerView />
             <CornerControls />
         </StrictMode>

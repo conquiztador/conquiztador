@@ -1,3 +1,5 @@
+import type { PowerUpKind, PowerUpMode } from "@conquiztador/core";
+
 /**
  * English UI text. This file defines the shape of `Messages`; every other
  * language must provide the same keys (TypeScript enforces it).
@@ -123,6 +125,70 @@ export const en = {
         back: "Back",
     },
 
+    /** Match settings shared by the lobby and room settings. */
+    settings: {
+        custom: "Custom",
+        roundsRange: (min: number, max: number) =>
+            `Enter a whole number from ${min} to ${max}.`,
+        powerUps: "Power-ups",
+        powerUpKinds: "Power-ups in play",
+        needKind: "Choose at least one power-up.",
+    },
+
+    powerUps: {
+        names: {
+            fiftyFifty: "50/50",
+            rangeFinder: "Range Finder",
+            fortify: "Fortify",
+            extraTime: "Extra Time",
+            scout: "Scout",
+        } as Record<PowerUpKind, string>,
+        /** What each power-up does, for tooltips and settings. */
+        descriptions: {
+            fiftyFifty: "Hides two wrong answers.",
+            rangeFinder: "Shows a range around the tie-breaker answer.",
+            fortify: "Builds a wall around one of your regions.",
+            extraTime: "Adds 5 seconds to your timer.",
+            scout: "Shows the category of your next question.",
+        } as Record<PowerUpKind, string>,
+        modes: {
+            none: "No power-ups",
+            oneEach: "One of each",
+            random: "Random",
+            reward: "Reward",
+            catchUp: "Catch-up",
+        } as Record<PowerUpMode, string>,
+        modeHints: {
+            none: "No power-ups in this match.",
+            oneEach: "Everyone starts with one of each power-up in play.",
+            random: "Everyone starts with 3 random power-ups.",
+            reward:
+                "Earn one for every 3rd correct answer and every 2nd region you take.",
+            catchUp:
+                "Players who fall behind get one for every 2nd wrong answer and every region they lose.",
+        } as Record<PowerUpMode, string>,
+        used: (who: Who, name: string) =>
+            who.you ? `You used ${name}` : `${who.name} used ${name}`,
+        earned: (who: Who, name: string) =>
+            who.you ? `You earned ${name}!` : `${who.name} earned ${name}`,
+        /** A power-up's name with "a"/"an", as in "earned a Scout". */
+        aName: {
+            fiftyFifty: "a 50/50",
+            rangeFinder: "a Range Finder",
+            fortify: "a Fortify",
+            extraTime: "an Extra Time",
+            scout: "a Scout",
+        } as Record<PowerUpKind, string>,
+        chooseFortify: "Choose one of your regions to fortify",
+        cancel: "Cancel",
+        between: (min: string, max: string) =>
+            `The answer is between ${min} and ${max}`,
+        scouted: (category: string) => `Next question: ${category}`,
+        noCategory: "no category",
+        charges: (name: string, n: number) => `${name}: ${n}`,
+        rejected: (reason: string) => `Power-up not used: ${reason}`,
+    },
+
     players: {
         you: "You",
         neutral: "Neutral",
@@ -208,6 +274,7 @@ export const en = {
         regions: "Regions",
         shields: "Capital shields",
         out: "out",
+        powerUps: "Power-ups",
     },
 
     gameOver: {

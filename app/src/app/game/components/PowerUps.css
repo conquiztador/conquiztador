@@ -1,0 +1,184 @@
+/* ------------------------------------------------ HUD bar (real pixels) */
+.pu-hud {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.pu-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+}
+.pu-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    height: 34px;
+    padding: 0 8px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    background: #2f6fd6;
+    border: 1px solid #2f6fd6;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.pu-button:hover:not(:disabled) {
+    filter: brightness(1.15);
+}
+.pu-button:disabled {
+    cursor: default;
+    background: #232b3c;
+    border-color: #3a4660;
+    color: #c8d1e0;
+}
+.pu-button.empty:disabled {
+    opacity: 0.5;
+}
+.pu-button.active {
+    background: #c0392b;
+    border-color: #ffe066;
+}
+.pu-icon {
+    flex: none;
+    width: 1.3em;
+    text-align: center;
+    font-size: 15px;
+}
+.pu-name {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pu-count {
+    flex: none;
+    min-width: 1.4em;
+    padding: 1px 4px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    font-size: 12px;
+    text-align: center;
+}
+.pu-scouted {
+    color: #ffe066;
+    font-weight: bold;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Portrait: one compact row above the player grid. */
+.hud-bottom .pu-hud {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.hud-bottom .pu-bar {
+    display: flex;
+    flex: none;
+}
+.hud-bottom .pu-button {
+    padding: 0 6px;
+}
+.hud-bottom .pu-name:not(.shown) {
+    display: none;
+}
+.hud-bottom .pu-button.active .pu-name {
+    display: inline;
+}
+.hud-bottom .pu-scouted {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Player rows: everyone's charges, compactly. */
+.hud-charges {
+    color: #8db8ff;
+}
+
+/* ------------------------------------------------ toast (real pixels) */
+.pu-toast {
+    position: fixed;
+    z-index: 4; /* above the battle overlay */
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100vw - 32px);
+    box-sizing: border-box;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: rgba(29, 36, 51, 0.95);
+    border: 1px solid #ffe066;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+    pointer-events: none;
+    animation: pu-toast-in 200ms ease-out;
+}
+@keyframes pu-toast-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -8px);
+    }
+}
+
+/* ------------------------------------------------ battle (design space) */
+.pu-battle {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+.pu-battle .pu-button {
+    height: 44px;
+    padding: 0 14px;
+    font-size: 18px;
+    gap: 8px;
+}
+.pu-battle .pu-icon {
+    font-size: 20px;
+}
+.pu-battle .pu-count {
+    font-size: 15px;
+}
+.numeric-side .pu-battle {
+    margin-top: 0;
+}
+.numeric-side .pu-battle .pu-button {
+    flex: 1;
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 16px;
+}
+/* Portrait: make room for the aid row and the Range Finder hint. */
+#ui-root[data-orientation="portrait"]
+    .battle-body:has(.numeric-entry .pu-battle)
+    .battle-question {
+    min-height: 100px;
+}
+#ui-root[data-orientation="portrait"] .numeric-entry:has(.pu-battle) {
+    gap: 12px;
+}
+#ui-root[data-orientation="portrait"]
+    .numeric-entry:has(.pu-battle)
+    .numeric-pad {
+    grid-auto-rows: 70px;
+}
+
+.mcq-option.removed {
+    opacity: 0.3;
+    text-decoration: line-through;
+}
+.range-hint {
+    font-size: 20px;
+    color: #f2c94c;
+}

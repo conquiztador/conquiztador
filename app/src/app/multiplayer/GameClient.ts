@@ -1,6 +1,8 @@
 import {
     ClientMessage,
+    ErrorCode,
     MatchEvent,
+    PowerUpKind,
     PROTOCOL_VERSION,
     PublicUser,
     RoomSettings,
@@ -108,6 +110,8 @@ class GameClient {
     onMatchEvent: (event: MatchEvent) => void = () => undefined;
     /** The connection to a running match is gone for good. */
     onMatchLost: () => void = () => undefined;
+    /** The server refused something during a match (e.g. a power-up). */
+    onMatchError: (code: ErrorCode, message: string) => void = () => undefined;
 
     /** Opens the multiplayer screens: login first if there's no token. */
     open(): void {
@@ -246,6 +250,11 @@ class GameClient {
 
     answer(value: number): void {
         this.send({ type: "answer", value });
+    }
+
+    /** `regionId`: the region to fortify. */
+    usePowerUp(kind: PowerUpKind, regionId?: string): void {
+        this.send({ type: "usePowerUp", kind, regionId });
     }
 
     /** Quit mid-match: a bot takes the seat (agents.md §2.8). */
@@ -447,6 +456,11 @@ class GameClient {
                 return;
             case "error": {
                 const code = message.code;
+                // The match screen shows its own errors briefly.
+                if (s.screen === "match") {
+                    this.onMatchError(code, message.message);
+                    return;
+                }
                 patch({
                     notice: (m) =>
                         m.rooms.errors[code] ?? m.rooms.errors.invalid,

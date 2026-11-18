@@ -1,5 +1,6 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import {
+    ALL_POWER_UPS,
     Difficulty,
     ROOM_SEATS_MAX,
     ROOM_SEATS_MIN,
@@ -11,6 +12,12 @@ import {
 } from "@conquiztador/core";
 
 import { formatNumber, language, playerName, useMessages } from "app/i18n";
+import { DEFAULT_ROUNDS } from "app/settings/matchSettings";
+import {
+    Choice,
+    PowerUpFields,
+    RoundsField,
+} from "app/settings/MatchSettingsFields";
 import { gameClient, multiplayerStore } from "./GameClient";
 import "./Multiplayer.css";
 
@@ -173,10 +180,11 @@ function AccountForm({
 // ---------------------------------------------------------------- room list
 
 const DEFAULT_SETTINGS: RoomSettings = {
-    rounds: 5,
+    rounds: DEFAULT_ROUNDS,
     placement: "draft",
     seats: 2,
     language: "en",
+    powerUps: ALL_POWER_UPS,
 };
 
 function RoomList({ rooms }: { rooms: RoomSummary[] }) {
@@ -229,7 +237,12 @@ function RoomList({ rooms }: { rooms: RoomSummary[] }) {
                                     <span className="mp-muted">
                                         {m.rooms.byAuthor(r.author)} ·{" "}
                                         {m.rooms.rounds(r.settings.rounds)} ·{" "}
-                                        {r.settings.language.toUpperCase()}
+                                        {r.settings.language.toUpperCase()} ·{" "}
+                                        {
+                                            m.powerUps.modes[
+                                                r.settings.powerUps.mode
+                                            ]
+                                        }
                                     </span>
                                 </div>
                                 <span className="mp-seats">
@@ -351,33 +364,6 @@ function PasswordForm({
 
 // ---------------------------------------------------------------- settings
 
-function Choice<T extends string | number>({
-    options,
-    value,
-    onChange,
-}: {
-    options: { value: T; label: string }[];
-    value: T;
-    /** Omit for read-only. */
-    onChange?: (value: T) => void;
-}) {
-    return (
-        <div className="mp-choice">
-            {options.map((o) => (
-                <button
-                    type="button"
-                    key={String(o.value)}
-                    className={o.value === value ? "selected" : ""}
-                    disabled={!onChange}
-                    onClick={() => onChange?.(o.value)}
-                >
-                    {o.label}
-                </button>
-            ))}
-        </div>
-    );
-}
-
 function SettingsEditor({
     settings,
     onChange,
@@ -397,18 +383,9 @@ function SettingsEditor({
                 onChange={onChange && ((seats) => onChange({ seats }))}
             />
             <span>{m.rooms.roundsLabel}</span>
-            <Choice<number>
-                options={[
-                    { value: 3, label: m.lobby.short(3) },
-                    { value: 5, label: m.lobby.standard(5) },
-                    { value: 7, label: m.lobby.long(7) },
-                ]}
-                value={settings.rounds}
-                onChange={
-                    onChange &&
-                    ((rounds) =>
-                        onChange({ rounds: rounds as RoomSettings["rounds"] }))
-                }
+            <RoundsField
+                rounds={settings.rounds}
+                onChange={onChange && ((rounds) => onChange({ rounds }))}
             />
             <span>{m.rooms.placement}</span>
             <Choice<RoomSettings["placement"]>
@@ -427,6 +404,10 @@ function SettingsEditor({
                 ]}
                 value={settings.language}
                 onChange={onChange && ((language) => onChange({ language }))}
+            />
+            <PowerUpFields
+                settings={settings.powerUps}
+                onChange={onChange && ((powerUps) => onChange({ powerUps }))}
             />
         </div>
     );

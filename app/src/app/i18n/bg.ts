@@ -116,6 +116,68 @@ export const bg: Messages = {
         back: "Назад",
     },
 
+    settings: {
+        custom: "Друг брой",
+        roundsRange: (min: number, max: number) =>
+            `Въведи цяло число от ${min} до ${max}.`,
+        powerUps: "Бонуси",
+        powerUpKinds: "Бонуси в играта",
+        needKind: "Избери поне един бонус.",
+    },
+
+    powerUps: {
+        names: {
+            fiftyFifty: "50/50",
+            rangeFinder: "Обхват",
+            fortify: "Укрепление",
+            extraTime: "Още време",
+            scout: "Разузнаване",
+        },
+        descriptions: {
+            fiftyFifty: "Скрива два грешни отговора.",
+            rangeFinder:
+                "Показва интервал около отговора на допълнителния въпрос.",
+            fortify: "Издига стена около една от твоите области.",
+            extraTime: "Добавя 5 секунди към твоето време.",
+            scout: "Показва категорията на следващия ти въпрос.",
+        },
+        modes: {
+            none: "Без бонуси",
+            oneEach: "По един от всеки",
+            random: "Случайни",
+            reward: "Награда",
+            catchUp: "Наваксване",
+        },
+        modeHints: {
+            none: "В този мач няма бонуси.",
+            oneEach: "Всеки започва с по един от всеки бонус в играта.",
+            random: "Всеки започва с 3 случайни бонуса.",
+            reward:
+                "Печелиш бонус за всеки 3-ти верен отговор и за всяка 2-ра превзета област.",
+            catchUp:
+                "Който изостава, получава бонус за всеки 2-ри грешен отговор и за всяка загубена област.",
+        },
+        used: (who: Who, name: string) =>
+            who.you ? `Използваш „${name}“` : `${who.name} използва „${name}“`,
+        earned: (who: Who, name: string) =>
+            who.you ? `Печелиш ${name}!` : `${who.name} печели ${name}`,
+        aName: {
+            fiftyFifty: "„50/50“",
+            rangeFinder: "„Обхват“",
+            fortify: "„Укрепление“",
+            extraTime: "„Още време“",
+            scout: "„Разузнаване“",
+        },
+        chooseFortify: "Избери една от твоите области, която да укрепиш",
+        cancel: "Отказ",
+        between: (min: string, max: string) =>
+            `Отговорът е между ${min} и ${max}`,
+        scouted: (category: string) => `Следващ въпрос: ${category}`,
+        noCategory: "без категория",
+        charges: (name: string, n: number) => `${name}: ${n}`,
+        rejected: (reason: string) => `Бонусът не е използван: ${reason}`,
+    },
+
     players: {
         you: "Ти",
         neutral: "Неутрални",
@@ -198,6 +260,7 @@ export const bg: Messages = {
         regions: "Области",
         shields: "Щитове на столицата",
         out: "отпадна",
+        powerUps: "Бонуси",
     },
 
     gameOver: {

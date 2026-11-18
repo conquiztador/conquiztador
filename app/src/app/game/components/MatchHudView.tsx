@@ -3,8 +3,12 @@ import { useEffect, useState } from "react";
 import { Messages, playerName, useMessages } from "app/i18n";
 import { css } from "app/ui/store";
 
+import { POWER_UP_KINDS } from "@conquiztador/core";
+
 import { COLORS } from "../ui";
+import { totalCharges } from "../powerUpRules";
 import { HudPlayer, matchHud } from "./MatchHud";
+import { HudPowerUps } from "./PowerUpBar";
 import "./MatchHud.css";
 
 /** Round, status message, standings and Quit, in real (unscaled) pixels. */
@@ -49,6 +53,7 @@ export function MatchHudView() {
             <aside className="hud hud-side" style={{ width: layout.width }}>
                 {header}
                 <Message text={message} deadline={deadline} />
+                <HudPowerUps />
                 {list}
                 <div className="hud-footer">{quit}</div>
             </aside>
@@ -67,6 +72,7 @@ export function MatchHudView() {
                 className="hud hud-bottom"
                 style={{ top: layout.playersTop }}
             >
+                <HudPowerUps />
                 {list}
             </section>
         </>
@@ -125,6 +131,21 @@ function Player({ player: p }: { player: HudPlayer }) {
                 ) : (
                     <>
                         <span title={m.hud.regions}>⬢ {p.regions}</span>
+                        {p.charges && (
+                            <span
+                                className="hud-charges"
+                                title={`${
+                                    m.hud.powerUps
+                                }: ${POWER_UP_KINDS.map((k) =>
+                                    m.powerUps.charges(
+                                        m.powerUps.names[k],
+                                        p.charges[k]
+                                    )
+                                ).join(", ")}`}
+                            >
+                                ⚡{totalCharges(p.charges)}
+                            </span>
+                        )}
                         <span className="hud-hp" title={m.hud.shields}>
                             {"♥".repeat(p.capitalHp)}
                         </span>

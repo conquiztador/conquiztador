@@ -1,9 +1,15 @@
-import { McqAnswer, NumericAnswer, Side } from "@conquiztador/core";
+import {
+    McqAnswer,
+    NumericAnswer,
+    PowerUpEffect,
+    Side,
+} from "@conquiztador/core";
 import { sfx } from "app/audio/sfx";
 import type { Messages } from "app/i18n";
 import { createStore } from "app/ui/store";
 
 import { COLORS, wait } from "../ui";
+import { applyEffect, NO_AIDS, QuestionAids } from "../powerUpRules";
 
 export interface Combatant {
     /** Player id, or null for the neutral defender. */
@@ -39,9 +45,15 @@ export interface PublicNumeric {
 interface Timed {
     spectating: boolean;
     opponentResponseMs: number | null;
+    /** Time to answer, without Extra Time (see `aids.bonusMs`). */
     limitMs: number;
     startedAt: number;
+    /** Your power-ups on this question. */
+    aids: QuestionAids;
 }
+
+/** Time to answer the question on screen, Extra Time included. */
+export const answerLimitMs = (t: Timed) => t.limitMs + t.aids.bonusMs;
 
 export type BattleStep =
     | { kind: "header" }
@@ -95,6 +107,8 @@ const TICK_SECONDS = 3;
 export class BattleOverlay {
     private cleanup: (() => void)[] = [];
     private humanSide: Side | null = null;
+    /** Re-arms the answer timeout after Extra Time, while one runs. */
+    private retime: (() => void) | null = null;
 
     async open(info: BattleInfo) {
         this.stopInput();
@@ -189,6 +203,19 @@ export class BattleOverlay {
         await wait(2600);
     }
 
+    /**
+     * Shows what your power-up did to the question on screen (50/50, Range
+     * Finder, Extra Time). Applying the same effect again changes nothing.
+     */
+    applyEffect(effect: PowerUpEffect) {
+        const step = battleStore.get().step;
+        if (step.kind !== "mcq" && step.kind !== "numeric") return;
+        const aids = applyEffect(step.aids, effect, step.kind);
+        if (aids === step.aids) return;
+        this.patchStep({ aids });
+        if (aids.bonusMs !== step.aids.bonusMs) this.retime?.();
+    }
+
     /** A human opponent locked in their answer just now. */
     opponentAnswered() {
         const step = battleStore.get().step;
@@ -212,6 +239,7 @@ export class BattleOverlay {
             opponentResponseMs,
             limitMs: timeLimitMs,
             startedAt: performance.now(),
+            aids: NO_AIDS,
         };
     }
 
@@ -225,11 +253,14 @@ export class BattleOverlay {
     ): Promise<{ value: number; ms: number } | null> {
         return new Promise((resolve) => {
             let done = false;
+            let timeout: ReturnType<typeof setTimeout>;
+            let ticks: ReturnType<typeof setTimeout>[] = [];
             const finish = (value: number | null) => {
                 if (done) return;
                 done = true;
                 clearTimeout(timeout);
                 ticks.forEach(clearTimeout);
+                if (this.retime === schedule) this.retime = null;
                 battleStore.set((s) => ({ ...s, onAnswer: null }));
                 if (value !== null) {
                     sfx.lockIn();
@@ -246,12 +277,28 @@ export class BattleOverlay {
                           }
                 );
             };
-            const timeout = setTimeout(() => finish(null), timed.limitMs);
-            const ticks = timed.spectating
-                ? []
-                : Array.from({ length: TICK_SECONDS }, (_, i) =>
-                      setTimeout(sfx.tick, timed.limitMs - (i + 1) * 1000)
-                  );
+            /** (Re)arms the timeout and ticks for the current time limit. */
+            const schedule = () => {
+                clearTimeout(timeout);
+                ticks.forEach(clearTimeout);
+                const step = battleStore.get().step;
+                const limit =
+                    step.kind === "mcq" || step.kind === "numeric"
+                        ? answerLimitMs(step)
+                        : timed.limitMs;
+                const left = timed.startedAt + limit - performance.now();
+                timeout = setTimeout(() => finish(null), Math.max(0, left));
+                ticks = timed.spectating
+                    ? []
+                    : Array.from(
+                          { length: TICK_SECONDS },
+                          (_, i) => left - (i + 1) * 1000
+                      )
+                          .filter((at) => at >= 0)
+                          .map((at) => setTimeout(sfx.tick, at));
+            };
+            schedule();
+            this.retime = schedule;
             this.cleanup.push(() => finish(null));
             if (!timed.spectating)
                 battleStore.set((s) => ({ ...s, onAnswer: finish }));

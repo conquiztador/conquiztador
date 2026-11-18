@@ -1,3 +1,4 @@
+import type { PowerUpInventory } from "@conquiztador/core";
 import type { Messages } from "app/i18n";
 import { createStore } from "app/ui/store";
 
@@ -10,6 +11,8 @@ export interface HudPlayer {
     capitalHp: number;
     eliminated: boolean;
     active: boolean;
+    /** Power-up charges (null when power-ups are off). */
+    charges: PowerUpInventory | null;
 }
 
 /**
@@ -54,4 +57,6 @@ export const HUD = {
     barHeight: 80,
     /** Height of one row in the portrait player grid. */
     playerRow: 46,
+    /** Height of the portrait power-up bar (above the player grid). */
+    powerUpBar: 40,
 };

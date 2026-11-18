@@ -13,7 +13,7 @@ Checked agents.md against the code:
 | §2.7 points ledger | Done, tested (`server`, `backend`) |
 | §3.3 bot targeting & trivia simulation | Done, tested (`core`) |
 | §2.1 custom round count | **Missing**: protocol only allowed 3/5/7 → now 1–15 (core done) |
-| §2.5 power-ups | **Missing**: walls existed in combat/UI but nothing set them → core done, server + app to do |
+| §2.5 power-ups | **Missing**: walls existed in combat/UI but nothing set them → core and app done, server to do |
 
 ## 1. Power-ups and custom rounds
 
@@ -41,15 +41,15 @@ Branch `power-ups`. Protocol version 2.
   - A human whose seat a bot takes over keeps their charges for the bot.
 - [ ] Tests (`server/src/*.test.ts`): settings validation and defaults; each power-up through the match flow (effect private, broadcast public, charge spent, invalid moments rejected); Extra Time really extends the wait; bot fortify announced; grants announced in reward mode; resume re-sends effects.
 
-### 1c. Web app
+### 1c. Web app — done (needs a browser play-through, see 1d)
 
-- [ ] Settings UI (single-player lobby and room settings): rounds presets 3/5/7 plus a custom number (1–15); power-up mode select and kind checkboxes (at least one kind unless mode is none). Room members see the author's choices read-only.
-- [ ] Match HUD power-up bar: your charges per kind; a button is enabled only when the server would accept it (pure helper, unit-tested). Fortify: pick one of your regions on the map (cancel possible). Scout: show the category until the battle starts.
-- [ ] Battle overlay: 50/50 hides the removed options; Range Finder shows "between X and Y"; Extra Time adds 5 s to your timer.
-- [ ] Feedback for everyone: "X used 50/50", "X earned a Scout", wall drawn on fortified region (already rendered by `MapView`).
-- [ ] i18n: every new string in `en.ts` and `bg.ts` (informal "ти").
-- [ ] Protocol version 2 in the client handshake.
-- [ ] Tests (`app`, jest): availability helper, settings form validation, i18n key parity.
+- [x] Settings UI (single-player lobby and room settings): rounds presets 3/5/7 plus a custom number (1–15); power-up mode select and kind checkboxes (at least one kind unless mode is none). Room members see the author's choices read-only. The lobby is now a React form (`settings/LobbyView.tsx`) and remembers its settings in `localStorage` (old values tolerated).
+- [x] Match HUD power-up bar: your charges per kind, everyone's total in the player rows; a button is enabled only when the server would accept it (`game/powerUpRules.ts`, unit-tested). Fortify: pick one of your regions on the map (cancel possible). Scout: show the category until the battle starts.
+- [x] Battle overlay: aid buttons inside the battle card (the HUD is dimmed there); 50/50 hides the removed options; Range Finder shows "between X and Y"; Extra Time adds 5 s to your timer. Re-sent effects (reconnect) are applied idempotently.
+- [x] Feedback for everyone: "X used 50/50", "X earned a Scout" (toast), wall drawn on fortified region (already rendered by `MapView`). Rejected uses show a short toast.
+- [x] i18n: every new string in `en.ts` and `bg.ts` (informal "ти").
+- [x] Protocol version 2 in the client handshake (`PROTOCOL_VERSION` from core).
+- [x] Tests (`app`, jest): availability helper, effect reducer, settings form validation, i18n key parity.
 
 ### 1d. Wrap-up
 

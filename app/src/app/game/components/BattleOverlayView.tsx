@@ -6,11 +6,13 @@ import { css } from "app/ui/store";
 
 import { COLORS } from "../ui";
 import {
+    answerLimitMs,
     BattleInfo,
     BattleStep,
     battleStore,
     Combatant,
 } from "./BattleOverlay";
+import { BattlePowerUps } from "./PowerUpBar";
 import "./BattleOverlay.css";
 
 const SIDES: Side[] = ["attacker", "defender"];
@@ -147,17 +149,19 @@ function Mcq({
     onAnswer: ((v: number) => void) | null;
 }) {
     const m = useMessages();
-    const { question, picked, reveal } = step;
+    const { question, picked, reveal, aids } = step;
+    const pickable = (i: number) => !aids.removed?.includes(i);
 
     useEffect(() => {
         if (!onAnswer) return;
         const onKey = (e: KeyboardEvent) => {
             const n = Number(e.key);
-            if (n >= 1 && n <= question.options.length) onAnswer(n - 1);
+            if (n >= 1 && n <= question.options.length && pickable(n - 1))
+                onAnswer(n - 1);
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [onAnswer, question.options.length]);
+    }, [onAnswer, question.options.length, aids.removed]);
 
     const chosenBy = (i: number) =>
         reveal ? SIDES.filter((s) => reveal.answers[s]?.optionIndex === i) : [];
@@ -178,13 +182,16 @@ function Mcq({
                         else if (chosenBy(i).length) color = COLORS.wrong;
                         else color = COLORS.buttonDisabled;
                     } else if (picked === i) color = COLORS.buttonSelected;
-                    else if (!onAnswer) color = COLORS.buttonDisabled;
+                    else if (!onAnswer || !pickable(i))
+                        color = COLORS.buttonDisabled;
                     return (
                         <button
                             key={i}
-                            className="battle-button mcq-option"
+                            className={`battle-button mcq-option${
+                                pickable(i) ? "" : " removed"
+                            }`}
                             style={{ "--bg": css(color) } as CSSProperties}
-                            disabled={!onAnswer}
+                            disabled={!onAnswer || !pickable(i)}
                             onClick={() => onAnswer?.(i)}
                         >
                             <span className="chips">
@@ -197,6 +204,13 @@ function Mcq({
                     );
                 })}
             </div>
+            {!reveal && !step.spectating && (
+                <BattlePowerUps
+                    question="mcq"
+                    answering={onAnswer !== null}
+                    aids={aids}
+                />
+            )}
             {reveal && (
                 <div className="battle-status">
                     {SIDES.map((s) => {
@@ -277,6 +291,21 @@ function Numeric({
                     >
                         {display || m.battle.yourAnswer}
                     </div>
+                    {step.aids.range && (
+                        <div className="range-hint">
+                            {m.powerUps.between(
+                                fmt(step.aids.range.min),
+                                fmt(step.aids.range.max)
+                            )}
+                        </div>
+                    )}
+                    {!step.spectating && (
+                        <BattlePowerUps
+                            question="numeric"
+                            answering={onAnswer !== null}
+                            aids={step.aids}
+                        />
+                    )}
                     <button
                         className="battle-button numeric-submit"
                         style={
@@ -397,8 +426,9 @@ function Timer({
 }) {
     const m = useMessages();
     const elapsed = useElapsed(step.startedAt);
-    const left = Math.max(0, 1 - elapsed / step.limitMs);
-    const secs = Math.ceil((step.limitMs - elapsed) / 1000);
+    const limit = answerLimitMs(step);
+    const left = Math.max(0, 1 - elapsed / limit);
+    const secs = Math.ceil((limit - elapsed) / 1000);
     const opponentDone =
         step.opponentResponseMs !== null && elapsed >= step.opponentResponseMs;
 

@@ -3,11 +3,15 @@ import { GameEvent } from "../Events";
 import { Page } from "shared/Page";
 import LayerManager from "app/managers/LayerManager";
 import {
+    enabledKinds,
+    ErrorCode,
     GamePhase,
     MATCH_TIMING,
     MatchEvent,
     MatchSnapshot,
     PlayerId,
+    PowerUpEffect,
+    PowerUpKind,
     RegionId,
     Side,
     territoriesOf,
@@ -15,6 +19,11 @@ import {
 import { BattleOverlay, Combatant } from "app/game/components/BattleOverlay";
 import { HUD, matchHud } from "app/game/components/MatchHud";
 import { MapEvent, MapView } from "app/game/components/MapView";
+import {
+    clearToast,
+    powerUpStore,
+    showToast,
+} from "app/game/components/PowerUps";
 import {
     localPlayerId,
     Messages,
@@ -45,6 +54,8 @@ const SLACK_MS = 100;
  * until we've caught up with the server.
  */
 const LATE_MS = 1000;
+/** Stop waiting for the server's reply to a power-up after this long. */
+const PENDING_MS = 4000;
 
 /**
  * The match screen: map, HUD and battle overlay. The match itself runs on
@@ -70,6 +81,16 @@ export class ConquestPage extends Page {
         wasCapital: boolean;
         humanSide: Side | null;
     } | null = null;
+    /** The choice the server is waiting for from you, if any. */
+    private promptInfo: {
+        kind: "capital" | "target";
+        options: RegionId[];
+    } | null = null;
+    /** Picking one of your regions to fortify (during the target prompt). */
+    private fortifying = false;
+    /** You used Scout this turn (once per turn). */
+    private scoutedThisTurn = false;
+    private pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor(app: Application, layerManager: LayerManager) {
         super(app, layerManager);
@@ -80,6 +101,11 @@ export class ConquestPage extends Page {
 
         gameClient.onMatchEvent = (event) => this.enqueue(event);
         gameClient.onMatchLost = () => this.hide();
+        gameClient.onMatchError = (code) => this.onServerError(code);
+        powerUpStore.set((s) => ({
+            ...s,
+            onUse: (kind) => this.usePowerUp(kind),
+        }));
         // Region labels on the map; HUD and battle card are React and
         // re-render on their own.
         onLanguageChange(() => this.state && this.refresh());
@@ -126,7 +152,10 @@ export class ConquestPage extends Page {
         } else {
             const players = this.state?.players.length ?? 3;
             const cols = Math.max(1, Math.floor((W - 2 * m) / 160));
-            const gridH = Math.ceil(players / cols) * HUD.playerRow + 2 * m;
+            const gridH =
+                Math.ceil(players / cols) * HUD.playerRow +
+                2 * m +
+                (this.powerUpsInPlay() ? HUD.powerUpBar : 0);
             const top = HUD.barHeight + m;
             const h = Math.min((W - 2 * m) / aspect, H - top - gridH);
             // Centre the map + player grid in the space under the bar
@@ -200,6 +229,8 @@ export class ConquestPage extends Page {
                     this.prompt(e.prompt, e.options, e.timeMs - lag);
                 return;
             case "turn": {
+                this.scoutedThisTurn = false;
+                powerUpStore.set((p) => ({ ...p, scouted: null }));
                 const player = this.player(e.playerId);
                 this.refresh(e.playerId);
                 if (e.playerId !== this.you)
@@ -217,9 +248,12 @@ export class ConquestPage extends Page {
                 return;
             }
             case "battle":
+                this.setPending(null);
+                powerUpStore.set((p) => ({ ...p, scouted: null }));
                 await this.openBattle(e, late);
                 return;
             case "question":
+                this.setPending(null);
                 if (e.timeMs - lag > 0)
                     this.askQuestion({
                         ...e,
@@ -272,6 +306,40 @@ export class ConquestPage extends Page {
                         ? m.status.finalRoundComplete
                         : m.status.roundComplete(e.round);
                 return;
+            case "powerUpUsed": {
+                // Fortify adds a wall; aids only change charges (keep the
+                // board as it is mid-battle).
+                this.state =
+                    e.powerUp === "fortify"
+                        ? e.state
+                        : { ...this.state, powerUps: e.state.powerUps };
+                // Your own use stays pending until its `powerUpEffect`.
+                this.refresh();
+                if (this.fortifying) this.map.setSelectable(this.fortifiable());
+                const player = this.player(e.playerId);
+                const kind = e.powerUp;
+                showToast((m) =>
+                    m.powerUps.used(who(player), m.powerUps.names[kind])
+                );
+                return;
+            }
+            case "powerUpEffect":
+                this.onEffect(e.effect);
+                return;
+            case "powerUpGranted": {
+                this.state = {
+                    ...this.state,
+                    powerUps: e.state.powerUps,
+                    powerUpProgress: e.state.powerUpProgress,
+                };
+                this.refresh();
+                const player = this.player(e.playerId);
+                const kind = e.powerUp;
+                showToast((m) =>
+                    m.powerUps.earned(who(player), m.powerUps.aName[kind])
+                );
+                return;
+            }
             case "botTakeover": {
                 this.state = e.state;
                 const player = this.player(e.playerId);
@@ -304,7 +372,11 @@ export class ConquestPage extends Page {
         this.state = state;
         this.revealed.clear();
         this.battleInfo = null;
+        this.scoutedThisTurn = false;
         this.endPrompt();
+        this.setPending(null);
+        powerUpStore.set((p) => ({ ...p, scouted: null }));
+        clearToast();
         this.colors = Object.fromEntries(
             state.config.players.map((p, i) => [p.id, PLAYER_COLORS[i]])
         );
@@ -313,6 +385,11 @@ export class ConquestPage extends Page {
         this.map = new MapView(this.app.ticker, 1.1);
         this.map.setPlayerColors(this.colors);
         this.map.on(MapEvent.regionSelected, (r: RegionId) => {
+            if (this.fortifying) {
+                sfx.select();
+                this.fortify(r);
+                return;
+            }
             if (!this.regionWaiter) return;
             sfx.select();
             this.regionWaiter(r);
@@ -330,6 +407,14 @@ export class ConquestPage extends Page {
     private hide() {
         this.matchId++; // stops the event queue
         this.endPrompt();
+        this.setPending(null);
+        powerUpStore.set((p) => ({
+            ...p,
+            enabled: [],
+            charges: null,
+            scouted: null,
+        }));
+        clearToast();
         this.overlay.close();
         this.visible = false;
         matchHud.set((s) => ({ ...s, visible: false }));
@@ -371,9 +456,13 @@ export class ConquestPage extends Page {
                     capitalHp: owned.find((t) => t.isCapital)?.hp ?? 0,
                     eliminated: p.eliminated,
                     active: p.id === activeId && !p.eliminated,
+                    charges: this.powerUpsInPlay()
+                        ? s.powerUps?.[p.id] ?? null
+                        : null,
                 };
             }),
         }));
+        this.syncPowerUps();
     }
 
     private activeId(): PlayerId | null {
@@ -468,6 +557,9 @@ export class ConquestPage extends Page {
     ) {
         this.status = (m) =>
             kind === "capital" ? m.status.chooseCapital : m.status.yourTurn;
+        this.promptInfo = { kind, options };
+        this.fortifying = false;
+        this.setPending(null);
         this.refresh();
         matchHud.set((s) => ({ ...s, deadline: performance.now() + timeMs }));
         this.map.setSelectable(options);
@@ -480,8 +572,134 @@ export class ConquestPage extends Page {
 
     private endPrompt() {
         this.regionWaiter = null;
+        this.promptInfo = null;
+        this.fortifying = false;
         this.map?.setSelectable([]);
         matchHud.set((s) => ({ ...s, deadline: null }));
+        this.syncPowerUps();
+    }
+
+    // ------------------------------------------------------------ power-ups
+
+    private powerUpsInPlay(): boolean {
+        return (
+            !!this.state && enabledKinds(this.state.config.powerUps).length > 0
+        );
+    }
+
+    /** Your regions that can still take a wall. */
+    private fortifiable(): RegionId[] {
+        if (!this.state) return [];
+        return Object.values(this.state.territories)
+            .filter((t) => t.ownerId === this.you && !t.walled)
+            .map((t) => t.regionId);
+    }
+
+    /** Mirrors what the power-up views need into their store. */
+    private syncPowerUps() {
+        const s = this.state;
+        const target =
+            this.promptInfo?.kind === "target"
+                ? {
+                      fortifiable: this.fortifiable().length,
+                      scouted: this.scoutedThisTurn,
+                  }
+                : null;
+        powerUpStore.set((p) => ({
+            ...p,
+            enabled: s ? enabledKinds(s.config.powerUps) : [],
+            charges: s?.powerUps?.[this.you] ?? null,
+            target,
+            fortifying: this.fortifying,
+        }));
+    }
+
+    /** A power-up button was pressed (the views only enable usable ones). */
+    private usePowerUp(kind: PowerUpKind) {
+        if (kind === "fortify") {
+            if (this.fortifying) this.stopFortifying();
+            else this.startFortifying();
+            return;
+        }
+        this.sendPowerUp(kind);
+    }
+
+    private sendPowerUp(kind: PowerUpKind, regionId?: RegionId) {
+        sfx.click();
+        this.setPending(kind);
+        gameClient.usePowerUp(kind, regionId);
+    }
+
+    /** While a use waits for the server, the buttons stay disabled. */
+    private setPending(kind: PowerUpKind | null) {
+        if (this.pendingTimer) clearTimeout(this.pendingTimer);
+        this.pendingTimer = null;
+        if (kind)
+            this.pendingTimer = setTimeout(
+                () => this.setPending(null),
+                PENDING_MS
+            );
+        if (powerUpStore.get().pending !== kind)
+            powerUpStore.set((p) => ({ ...p, pending: kind }));
+    }
+
+    /** Fortify: the map lets you pick one of your regions instead. */
+    private startFortifying() {
+        if (this.promptInfo?.kind !== "target") return;
+        this.fortifying = true;
+        this.map.setSelectable(this.fortifiable());
+        this.status = (m) => m.powerUps.chooseFortify;
+        this.syncPowerUps();
+    }
+
+    private stopFortifying() {
+        this.fortifying = false;
+        if (this.promptInfo) {
+            this.map.setSelectable(this.promptInfo.options);
+            this.status = (m) => m.status.yourTurn;
+        }
+        this.syncPowerUps();
+    }
+
+    private fortify(regionId: RegionId) {
+        this.stopFortifying();
+        this.sendPowerUp("fortify", regionId);
+    }
+
+    /** What your power-up revealed (private to you). */
+    private onEffect(effect: PowerUpEffect) {
+        this.setPending(null);
+        switch (effect.kind) {
+            case "fiftyFifty":
+            case "rangeFinder":
+            case "extraTime":
+                this.overlay.applyEffect(effect);
+                return;
+            case "scout":
+                // Shown until the battle starts (the question shows it then).
+                if (this.battleInfo) return;
+                this.scoutedThisTurn = true;
+                powerUpStore.set((p) => ({
+                    ...p,
+                    scouted: { category: effect.category },
+                }));
+                this.syncPowerUps();
+                return;
+            case "fortify":
+                // The wall arrives with `powerUpUsed`.
+                return;
+        }
+    }
+
+    /** The server refused something (e.g. a power-up at the wrong moment). */
+    private onServerError(code: ErrorCode) {
+        if (!this.visible) return;
+        const wasPowerUp = powerUpStore.get().pending !== null;
+        this.setPending(null);
+        showToast((m) => {
+            const reason = m.rooms.errors[code] ?? m.rooms.errors.invalid;
+            return wasPowerUp ? m.powerUps.rejected(reason) : reason;
+        });
     }
 
     // ------------------------------------------------------------ battles
