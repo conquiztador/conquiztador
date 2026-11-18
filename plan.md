@@ -53,13 +53,21 @@ Branch `power-ups`. Protocol version 2.
 
 ### 1d. Wrap-up
 
-- [ ] Full test run (`npm test` at the root, backend `pipenv run test`), typecheck, manual play-through on desktop and phone width.
+- [x] Full automated run on the merged branch: core 101, app 39, server 49 (3× clean), backend 44; typecheck and `vite build` clean.
+- [ ] Manual play-through on desktop and phone width (see the browser checklist below).
 - [ ] Merge `power-ups` into `master`.
+
+Browser checklist (not verifiable from tests):
+- Portrait battle card with the aid buttons plus the Range Finder hint (uses CSS `:has()`).
+- Long Bulgarian power-up names in the side-panel grid.
+- Toast position vs. battle card header and reconnect banner.
+- Map highlight while choosing a region to fortify.
+- A full match against a real server: each power-up, a reconnect mid-question with Extra Time.
 
 ## 2. Test debt
 
 - [x] `server/src/match.test.ts`: flaky "Not your turn" thrown from the scripted bot's `setTimeout` in "keeps a dropped player's seat until the reconnect window ends" (race between prompt and takeover). Make the scripted player ignore stale prompts.
-- [ ] Backend tests can't run in the current pipenv environment (Django not importable) — fix the environment, then run `pipenv run test`.
+- [x] Backend tests: they pass (44). If pipenv picks up an outer `VIRTUAL_ENV` (e.g. a pyenv one) it can't find Django — run with `PIPENV_IGNORE_VIRTUALENVS=1 pipenv run test`.
 - [ ] App: no tests for pages/components (`ConquestPage`, `MatchHud`, `BattleOverlay`); extract pure logic from them where it's worth testing.
 
 ## 3. Later (not designed yet)
