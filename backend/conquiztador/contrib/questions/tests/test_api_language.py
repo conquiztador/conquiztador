@@ -1,14 +1,22 @@
 from io import StringIO
 
 from django.core.management import call_command
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from conquiztador.contrib.questions.models import Question
 from conquiztador.mixins import TestMixin
 
+SECRET = "test-secret"
 
+
+@override_settings(GAME_SERVER_SECRET=SECRET)
 class QuestionLanguageTestCase(APITestCase, TestMixin):
+    def deck(self, params, secret=SECRET):
+        headers = {"HTTP_X_GAME_SERVER_SECRET": secret} if secret else {}
+        return self.client.get(reverse("question-get-deck"), params, **headers)
+
     def setUp(self):
         self.user = self.create_user()
         self.en = self.create_question(text="Capital of Bulgaria?", language="en")
@@ -44,7 +52,7 @@ class QuestionLanguageTestCase(APITestCase, TestMixin):
         self.assertEqual(uuids, [str(self.en.pk)])
 
     def test_deck_returns_solutions_in_one_language(self):
-        response = self.client.get(reverse("question-get-deck"), {"language": "bg"})
+        response = self.deck({"language": "bg"})
         self.assertEqual(response.status_code, 200)
         deck = response.json()
         self.assertEqual(
@@ -64,17 +72,23 @@ class QuestionLanguageTestCase(APITestCase, TestMixin):
         )
 
     def test_deck_filters_by_kind_and_limits_count(self):
-        url = reverse("question-get-deck")
-        response = self.client.get(url, {"language": "bg", "kind": "numeric"})
+        response = self.deck({"language": "bg", "kind": "numeric"})
         self.assertEqual([q["uuid"] for q in response.json()], [str(self.bg_numeric.pk)])
-        response = self.client.get(url, {"count": 1})
+        response = self.deck({"count": 1})
         self.assertEqual(len(response.json()), 1)
 
     def test_deck_rejects_bad_params(self):
-        url = reverse("question-get-deck")
-        self.assertEqual(self.client.get(url, {"language": "xx"}).status_code, 400)
-        self.assertEqual(self.client.get(url, {"kind": "x"}).status_code, 400)
-        self.assertEqual(self.client.get(url, {"count": "many"}).status_code, 400)
+        self.assertEqual(self.deck({"language": "xx"}).status_code, 400)
+        self.assertEqual(self.deck({"kind": "x"}).status_code, 400)
+        self.assertEqual(self.deck({"count": "many"}).status_code, 400)
+
+    def test_deck_is_game_server_only(self):
+        # No secret, a wrong one, or a logged-in player: no solutions.
+        self.assertEqual(self.deck({}, secret=None).status_code, 403)
+        self.assertEqual(self.deck({}, secret="guess").status_code, 403)
+        self.client.force_authenticate(self.user)
+        response = self.client.get(reverse("question-get-deck"))
+        self.assertEqual(response.status_code, 403)
 
 
 class SeedQuestionsTestCase(APITestCase):

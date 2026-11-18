@@ -11,7 +11,6 @@
     "linter-fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "formatter-check": "prettier . --check",
     "formatter-fix": "prettier . --write",
-    "prepare": "husky install",
     "preview": "vite preview"
   },
   "keywords": [
@@ -24,7 +23,8 @@
     "pixi.js": "^8.23.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "@conquiztador/core": "*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

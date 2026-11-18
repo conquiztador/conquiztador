@@ -4,14 +4,10 @@ import Application from "../Application";
 import { ButtonEvent, GameEvent } from "../Events";
 import { Page } from "shared/Page";
 import LayerManager from "app/managers/LayerManager";
-import { DEFAULT_CONFIG } from "app/core/GameEngine";
-import { Difficulty, GameConfig, PlacementMode } from "app/core/types";
+import { Difficulty, PlacementMode } from "@conquiztador/core";
 import { Button, COLORS, label } from "app/game/ui";
 import { language, Messages, t } from "app/i18n";
-import {
-    loadQuestionDeck,
-    NoQuestionsError,
-} from "app/services/QuestionDeckService";
+import { gameClient } from "app/multiplayer/GameClient";
 
 /** Text that's re-read from the dictionary whenever the language changes. */
 type Text = (m: Messages) => string;
@@ -20,8 +16,6 @@ interface Option<T> {
     label: Text;
     value: T;
 }
-
-const BOT_NAMES = ["Asparuh", "Krum", "Simeon", "Samuil"];
 
 /** Single-player match setup: opponents, difficulty, length and placement. */
 export class LobbyPage extends Page {
@@ -39,13 +33,6 @@ export class LobbyPage extends Page {
     }[] = [];
     private startButton: Button;
     private backButton: Button;
-    private error = label("", 20, COLORS.wrong, {
-        align: "center",
-        wordWrap: true,
-        wordWrapWidth: 640,
-    });
-    private errorText: Text | null = null;
-    private loading = false;
 
     constructor(app: Application, layerManager: LayerManager) {
         super(app, layerManager);
@@ -99,22 +86,19 @@ export class LobbyPage extends Page {
             (v) => (this.placement = v)
         );
 
-        const start = new Button("", 260, 60, 26).onClick(
-            () => void this.start()
-        );
+        const start = new Button("", 260, 60, 26).onClick(() => this.start());
         const back = new Button("", 260, 60, 26).onClick(() => {
             this.visible = false;
             this.app.stage.emit(ButtonEvent.exitButtonClicked);
         });
         this.startButton = start;
         this.backButton = back;
-        this.error.anchor.set(0.5);
-        this.addChild(start, back, this.error);
+        this.addChild(start, back);
 
         this.app.stage.on(ButtonEvent.newGameButtonClicked, () => {
-            this.showError(null);
             this.visible = true;
         });
+        this.app.stage.on(GameEvent.startMatch, () => (this.visible = false));
         this.relabel();
         this.layout();
     }
@@ -126,14 +110,8 @@ export class LobbyPage extends Page {
             row.text.text = row.title(m);
             row.buttons.forEach((b, i) => (b.label = row.labels[i](m)));
         }
-        this.startButton.label = this.loading ? m.lobby.loading : m.lobby.start;
+        this.startButton.label = m.lobby.start;
         this.backButton.label = m.lobby.back;
-        this.error.text = this.errorText ? this.errorText(m) : "";
-    }
-
-    private showError(text: Text | null) {
-        this.errorText = text;
-        this.relabel();
     }
 
     protected layout() {
@@ -165,8 +143,6 @@ export class LobbyPage extends Page {
         const buttonsY = this.app.designHeight - 88;
         this.backButton.position.set(x - 150, buttonsY);
         this.startButton.position.set(x + 150, buttonsY);
-        this.error.position.set(x, buttonsY - 62);
-        this.error.style.wordWrapWidth = this.app.designWidth - 80;
     }
 
     private addRow<T>(
@@ -201,47 +177,16 @@ export class LobbyPage extends Page {
     }
 
     /**
-     * Loads the question deck in the current language, then starts the
-     * match. Stays on the lobby with an error if the backend can't serve one.
+     * Starts a single-player match on the game server (which also saves the
+     * points). The server picks the questions in the current language.
      */
-    private async start() {
-        if (this.loading) return;
-        this.loading = true;
-        this.startButton.enabled = false;
-        this.showError(null);
-
-        let deck;
-        try {
-            deck = await loadQuestionDeck(language());
-        } catch (e) {
-            console.error(e);
-            this.showError(
-                e instanceof NoQuestionsError
-                    ? (m) => m.lobby.noQuestions
-                    : (m) => m.lobby.loadFailed
-            );
-            return;
-        } finally {
-            this.loading = false;
-            this.startButton.enabled = true;
-            this.relabel();
-        }
-
-        const config: GameConfig = {
-            ...DEFAULT_CONFIG,
-            rounds: this.rounds,
-            placement: this.placement,
-            players: [
-                { id: "you", name: "You", kind: "human" },
-                ...BOT_NAMES.slice(0, this.opponents).map((name, i) => ({
-                    id: `bot-${i + 1}`,
-                    name,
-                    kind: "bot" as const,
-                    difficulty: this.difficulty,
-                })),
-            ],
-        };
+    private start() {
         this.visible = false;
-        this.app.stage.emit(GameEvent.startMatch, config, deck);
+        gameClient.startSolo({
+            rounds: this.rounds as 3 | 5 | 7,
+            placement: this.placement,
+            language: language(),
+            bots: Array.from({ length: this.opponents }, () => this.difficulty),
+        });
     }
 }

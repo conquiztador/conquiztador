@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "conquiztador",
     "conquiztador.contrib.users.apps.UsersConfig",
     "conquiztador.contrib.questions.apps.QuestionsConfig",
+    "conquiztador.contrib.points.apps.PointsConfig",
 ]
 
 ROOT_URLCONF = "conquiztador.urls"

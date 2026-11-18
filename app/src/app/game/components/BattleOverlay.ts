@@ -1,4 +1,4 @@
-import { McqAnswer, NumericAnswer, Side } from "app/core/types";
+import { McqAnswer, NumericAnswer, Side } from "@conquiztador/core";
 import { sfx } from "app/audio/sfx";
 import type { Messages } from "app/i18n";
 import { createStore } from "app/ui/store";
@@ -84,7 +84,6 @@ export const battleStore = createStore<BattleViewState>({
     onAnswer: null,
 });
 
-const SPECTATE_MS = 1800;
 /** Tick each second over the last few seconds of the countdown. */
 const TICK_SECONDS = 3;
 
@@ -190,6 +189,16 @@ export class BattleOverlay {
         await wait(2600);
     }
 
+    /** A human opponent locked in their answer just now. */
+    opponentAnswered() {
+        const step = battleStore.get().step;
+        if (step.kind !== "mcq" && step.kind !== "numeric") return;
+        if (step.opponentResponseMs !== null) return;
+        this.patchStep({
+            opponentResponseMs: performance.now() - step.startedAt,
+        });
+    }
+
     // ------------------------------------------------------------ helpers
 
     private timed(
@@ -201,7 +210,7 @@ export class BattleOverlay {
         return {
             spectating,
             opponentResponseMs,
-            limitMs: spectating ? SPECTATE_MS : timeLimitMs,
+            limitMs: timeLimitMs,
             startedAt: performance.now(),
         };
     }

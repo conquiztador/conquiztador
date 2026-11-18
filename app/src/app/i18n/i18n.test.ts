@@ -1,6 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 
-import { BULGARIA } from "app/core/maps/bulgaria";
+import { BULGARIA } from "@conquiztador/core";
 
 import { bg } from "./bg";
 import { en } from "./en";

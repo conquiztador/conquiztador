@@ -25,6 +25,15 @@ class User(AbstractUser):
         error_messages={"unique": _("A user with that username already exists.")},
     )
 
+    points = models.IntegerField(
+        _("Points"),
+        default=0,
+        editable=False,
+        help_text=_(
+            "Current balance. Only changed together with a points ledger entry."
+        ),
+    )
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"
@@ -36,3 +45,8 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+    @property
+    def display_name(self):
+        """What other players see: the username, else the email's local part."""
+        return self.username or self.email.split("@")[0]

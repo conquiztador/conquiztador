@@ -28,6 +28,8 @@ export interface MatchHudState {
     rounds: number;
     /** Status line, rendered in the current language. */
     message: (m: Messages) => string;
+    /** `performance.now()` time your choice is due (capital/target), or null. */
+    deadline: number | null;
     players: HudPlayer[];
     layout: HudLayout;
     onQuit: () => void;
@@ -38,6 +40,7 @@ export const matchHud = createStore<MatchHudState>({
     round: 1,
     rounds: 1,
     message: () => "",
+    deadline: null,
     players: [],
     layout: { kind: "side", width: 240 },
     onQuit: () => undefined,

@@ -147,6 +147,24 @@ export class GameEngine {
         return attackableTargets(this.state, playerId);
     }
 
+    /**
+     * Hands a player's seat to a bot for the rest of the match (they quit or
+     * didn't reconnect). If a battle is waiting on them, the bot answers now.
+     */
+    replaceWithBot(playerId: PlayerId, difficulty: Difficulty): void {
+        const player = this.player(playerId);
+        if (!player) throw new GameRuleError(`Unknown player ${playerId}`);
+        player.kind = "bot";
+        player.difficulty = difficulty;
+        const config = this.state.config.players.find((p) => p.id === playerId);
+        Object.assign(config, { kind: "bot", difficulty });
+        const phase = this.state.phase;
+        if (phase === GamePhase.BattleMcq || phase === GamePhase.BattleNumeric) {
+            this.fillBotAnswers();
+            this.tryResolve();
+        }
+    }
+
     // ---------------------------------------------------------------- setup
 
     start(): void {

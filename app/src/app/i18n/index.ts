@@ -10,7 +10,8 @@ export const LANGUAGES: Language[] = ["en", "bg"];
 const DICTIONARIES: Record<Language, Messages> = { en, bg };
 const LOCALES: Record<Language, string> = { en: "en-US", bg: "bg-BG" };
 const STORAGE_KEY = "conquiztador.language";
-const HUMAN_ID = "you";
+/** Player id of whoever uses this browser ("you" in sentences). */
+let localId = "you";
 
 let current: Language = initialLanguage();
 const listeners = new Set<(language: Language) => void>();
@@ -82,12 +83,21 @@ export function formatNumber(n: number, options?: Intl.NumberFormatOptions) {
 /** Display name for a player: "You"/"Ти" for the human, localized bots. */
 export function playerName(player: { id: string; name: string }): string {
     const m = t().players;
-    if (player.id === HUMAN_ID) return m.you;
+    if (player.id === localId) return m.you;
     return m.bots[player.name] ?? player.name;
 }
 
 export function who(player: { id: string; name: string }): Who {
-    return { name: playerName(player), you: player.id === HUMAN_ID };
+    return { name: playerName(player), you: player.id === localId };
+}
+
+/** Set when a match starts: the server knows this player by their account id. */
+export function setLocalPlayerId(id: string): void {
+    localId = id;
+}
+
+export function localPlayerId(): string {
+    return localId;
 }
 
 export function regionName(id: string): string {

@@ -4,8 +4,8 @@ export enum ButtonEvent {
 }
 
 export enum GameEvent {
-    /** Payload: GameConfig. Emitted by the lobby to start a match. */
+    /** A match from the game server is now on screen. */
     startMatch = "startMatch",
-    /** Payload: final GameState. */
+    /** Payload: final state, points per player, the local player's id. */
     matchFinished = "matchFinished",
 }

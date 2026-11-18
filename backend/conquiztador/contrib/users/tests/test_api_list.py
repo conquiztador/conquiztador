@@ -37,6 +37,7 @@ class UserListTestCase(APITestCase, TestMixin):
                         reverse("user-detail", args=[user.pk])
                     ),
                     "email": user.email,
+                    "username": None,
                     "last_login": user.last_login.astimezone().isoformat(),
                     "date_joined": user.date_joined.astimezone().isoformat(),
                 }
@@ -63,11 +64,36 @@ class UserListTestCase(APITestCase, TestMixin):
                 reverse("user-detail", args=[user.pk])
             ),
             "email": user.email,
+            "username": None,
             "last_login": None,
             "date_joined": user.date_joined.astimezone().isoformat(),
         }
 
         self.assertDictEqual(response.json(), expected_response)
+
+    def test_post_with_username(self):
+        url = reverse("user-list")
+        data = {"email": "jane@example.com", "username": "Jane", "password": "pw"}
+
+        response = self.client.post(url, data=data, format="json")
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["username"], "Jane")
+        self.assertEqual(User.objects.get(email="jane@example.com").display_name, "Jane")
+
+        # Usernames are unique.
+        data = {"email": "other@example.com", "username": "Jane", "password": "pw"}
+        response = self.client.post(url, data=data, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("username", response.json())
+
+    def test_post_blank_username_is_stored_as_null(self):
+        url = reverse("user-list")
+        for email in ("a@example.com", "b@example.com"):
+            data = {"email": email, "username": "", "password": "pw"}
+            response = self.client.post(url, data=data, format="json")
+            self.assertEqual(response.status_code, 201)
+        self.assertEqual(User.objects.filter(username__isnull=True).count(), 2)
 
     def test_obtain_token_requires_valid_credentials(self):
         url = "/api/token/"

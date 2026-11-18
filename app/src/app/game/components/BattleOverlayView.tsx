@@ -1,6 +1,6 @@
 import { CSSProperties, useEffect, useState } from "react";
 
-import { Side } from "app/core/types";
+import { Side } from "@conquiztador/core";
 import { formatNumber, Messages, playerName, useMessages } from "app/i18n";
 import { css } from "app/ui/store";
 

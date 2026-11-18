@@ -391,6 +391,21 @@ describe("GameEngine", () => {
         expect(engine.getState().territories.b.ownerId).toBeNull();
     });
 
+    it("a bot taking over a seat answers the pending question", () => {
+        const { engine, first, second } = draftedGame();
+        const s = engine.getState();
+        for (const id of ["b", "c"]) s.territories[id].ownerId = first;
+        s.territories.d.ownerId = second;
+        setState(engine, s);
+        engine.selectTarget(first, "d");
+        engine.submitMcq(first, right());
+        expect(engine.phase).toBe(GamePhase.BattleMcq); // waits for p2
+        engine.replaceWithBot(second, Difficulty.Hard);
+        expect(engine.phase).not.toBe(GamePhase.BattleMcq);
+        const p2 = engine.getState().players.find((p) => p.id === second);
+        expect(p2).toMatchObject({ kind: "bot", difficulty: Difficulty.Hard });
+    });
+
     it("timer expiry counts as a wrong answer", () => {
         const { engine, first } = draftedGame();
         engine.selectTarget(first, "b");

@@ -4,6 +4,8 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from conquiztador.permissions import IsGameServer
+
 from . import models, serializers
 
 LANGUAGE_CODES = [code for code, _ in settings.LANGUAGES]
@@ -91,11 +93,18 @@ class QuestionViewSet(
 
         return Response(serializer.data)
 
-    @action(detail=False, methods=("get",), url_path="deck")
+    @action(
+        detail=False,
+        methods=("get",),
+        url_path="deck",
+        permission_classes=(IsGameServer,),
+        authentication_classes=(),
+    )
     def get_deck(self, request):
         """
-        A shuffled batch of questions with their solutions, for a
-        single-player match: `?language=bg&kind=numeric&count=50`.
+        A shuffled batch of questions with their solutions, for one match:
+        `?language=bg&kind=numeric&count=50`. Game server only: the
+        solutions must never reach a browser (agents.md §3.1).
         """
         kind, error = kind_param(request)
         if error:

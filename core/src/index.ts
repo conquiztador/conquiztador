@@ -4,4 +4,7 @@ export * from "./territory";
 export * from "./bot";
 export * from "./rng";
 export * from "./GameEngine";
+export * from "./questions";
 export { BULGARIA } from "./maps/bulgaria";
+export { BULGARIA_SHAPES, BULGARIA_SHAPE_SIZE } from "./maps/bulgariaShapes";
+export * from "./protocol";

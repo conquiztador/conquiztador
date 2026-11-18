@@ -1,0 +1,14 @@
+{
+  "name": "conquiztador",
+  "private": true,
+  "description": "Conquiztador monorepo: shared game rules (core), web client (app) and game server (server).",
+  "workspaces": [
+    "core",
+    "app",
+    "server"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

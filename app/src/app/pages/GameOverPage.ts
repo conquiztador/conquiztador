@@ -4,18 +4,26 @@ import Application from "../Application";
 import { ButtonEvent, GameEvent } from "../Events";
 import { Page } from "shared/Page";
 import LayerManager from "app/managers/LayerManager";
-import { territoriesOf } from "app/core/territory";
-import { GameState } from "app/core/types";
+import {
+    MatchSnapshot,
+    PlayerId,
+    PointsTally,
+    pointsTotal,
+    territoriesOf,
+} from "@conquiztador/core";
 import { Button, COLORS, label } from "app/game/ui";
 import { sfx } from "app/audio/sfx";
-import { playerName, t } from "app/i18n";
+import { formatNumber, playerName, t } from "app/i18n";
+import { gameClient, multiplayerStore } from "app/multiplayer/GameClient";
 
 /** Final standings after a match. */
 export class GameOverPage extends Page {
     private content = new PIXI.Container();
     private menuButton: Button;
     private againButton: Button;
-    private state: GameState | null = null;
+    private state: MatchSnapshot | null = null;
+    private you: PlayerId = "";
+    private earned = 0;
 
     constructor(app: Application, layerManager: LayerManager) {
         super(app, layerManager);
@@ -24,18 +32,25 @@ export class GameOverPage extends Page {
 
         const menu = new Button("", 260, 60, 24).onClick(() => {
             this.visible = false;
-            this.app.stage.emit(ButtonEvent.exitButtonClicked);
+            gameClient.afterMatch("menu"); // shows the main menu
         });
         const again = new Button("", 260, 60, 24).onClick(() => {
             this.visible = false;
-            this.app.stage.emit(ButtonEvent.newGameButtonClicked);
+            const solo = this.solo;
+            gameClient.afterMatch("again");
+            if (solo) this.app.stage.emit(ButtonEvent.newGameButtonClicked);
         });
         this.menuButton = menu;
         this.againButton = again;
         this.addChild(menu, again);
 
-        this.app.stage.on(GameEvent.matchFinished, (s: GameState) =>
-            this.show(s)
+        this.app.stage.on(
+            GameEvent.matchFinished,
+            (
+                s: MatchSnapshot,
+                points: Record<PlayerId, PointsTally>,
+                you: PlayerId
+            ) => this.show(s, points, you)
         );
         this.relabel();
         this.layout();
@@ -44,7 +59,7 @@ export class GameOverPage extends Page {
     protected relabel() {
         const m = t().gameOver;
         this.menuButton.label = m.mainMenu;
-        this.againButton.label = m.playAgain;
+        this.againButton.label = this.solo ? m.playAgain : m.backToRoom;
         if (this.state) this.renderStandings(this.state);
     }
 
@@ -56,15 +71,26 @@ export class GameOverPage extends Page {
         if (this.state) this.renderStandings(this.state);
     }
 
-    private show(state: GameState) {
+    private get solo() {
+        return multiplayerStore.get().mode === "solo";
+    }
+
+    private show(
+        state: MatchSnapshot,
+        points: Record<PlayerId, PointsTally>,
+        you: PlayerId
+    ) {
         this.state = state;
-        if (state.winners.includes("you")) sfx.victory();
+        this.you = you;
+        this.earned = points[you] ? pointsTotal(points[you]) : 0;
+        this.relabel();
+        if (state.winners.includes(you)) sfx.victory();
         else sfx.gameLost();
         this.renderStandings(state);
         this.visible = true;
     }
 
-    private renderStandings(state: GameState) {
+    private renderStandings(state: MatchSnapshot) {
         const m = t().gameOver;
         const top = this.app.isPortrait ? 220 : 130;
         this.content
@@ -73,7 +99,7 @@ export class GameOverPage extends Page {
         const winners = state.players.filter((p) =>
             state.winners.includes(p.id)
         );
-        const youWon = state.winners.includes("you");
+        const youWon = state.winners.includes(this.you);
 
         const title =
             winners.length > 1
@@ -107,5 +133,18 @@ export class GameOverPage extends Page {
             row.position.set(this.app.center.x, top + 120 + i * 60);
             this.content.addChild(row);
         });
+
+        const earned = label(
+            m.pointsEarned(formatNumber(this.earned)),
+            34,
+            COLORS.gold,
+            { stroke: { color: 0x000000, width: 5 } }
+        );
+        earned.anchor.set(0.5);
+        earned.position.set(
+            this.app.center.x,
+            top + 120 + ranked.length * 60 + 30
+        );
+        this.content.addChild(earned);
     }
 }

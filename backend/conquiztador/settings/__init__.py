@@ -25,6 +25,7 @@ include(
     "components/password_validation.py",
     "components/templates.py",
     "components/rest_framework.py",
+    "components/game_server.py",
     "environments/{0}.py".format(ENV),
     optional("environments/local.py"),
 )

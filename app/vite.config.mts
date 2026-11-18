@@ -37,6 +37,8 @@ export default defineConfig(({ mode }) => ({
         // (http://<lan-ip>:8080) reach the backend too.
         proxy: {
             "/api": "http://127.0.0.1:8000",
+            // The game server (server/, `npm start`).
+            "/ws": { target: "ws://127.0.0.1:8090", ws: true },
         },
         // No HMR host/port override: the client reconnects to whichever
         // host served the page (nginx proxies the WebSocket upgrade).

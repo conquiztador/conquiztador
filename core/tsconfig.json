@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "strict": false,
+    "noImplicitAny": true,
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "target": "es2020",
+    "lib": ["es2020"],
+    "types": ["jest"],
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src"]
+}

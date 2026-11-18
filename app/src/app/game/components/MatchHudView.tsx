@@ -1,4 +1,6 @@
-import { playerName, useMessages } from "app/i18n";
+import { useEffect, useState } from "react";
+
+import { Messages, playerName, useMessages } from "app/i18n";
 import { css } from "app/ui/store";
 
 import { COLORS } from "../ui";
@@ -12,6 +14,7 @@ export function MatchHudView() {
         round,
         rounds,
         message,
+        deadline,
         players,
         layout,
         onQuit,
@@ -45,7 +48,7 @@ export function MatchHudView() {
         return (
             <aside className="hud hud-side" style={{ width: layout.width }}>
                 {header}
-                <div className="hud-message">{message(m)}</div>
+                <Message text={message} deadline={deadline} />
                 {list}
                 <div className="hud-footer">{quit}</div>
             </aside>
@@ -58,7 +61,7 @@ export function MatchHudView() {
                 style={{ height: layout.barHeight }}
             >
                 {header}
-                <div className="hud-message">{message(m)}</div>
+                <Message text={message} deadline={deadline} />
             </header>
             <section
                 className="hud hud-bottom"
@@ -67,6 +70,37 @@ export function MatchHudView() {
                 {list}
             </section>
         </>
+    );
+}
+
+/** Status line, with the seconds left while it's your move. */
+function Message({
+    text,
+    deadline,
+}: {
+    text: (m: Messages) => string;
+    deadline: number | null;
+}) {
+    const m = useMessages();
+    const [now, setNow] = useState(() => performance.now());
+    useEffect(() => {
+        if (deadline === null) return;
+        const id = setInterval(() => setNow(performance.now()), 250);
+        return () => clearInterval(id);
+    }, [deadline]);
+    const left =
+        deadline === null
+            ? null
+            : Math.max(0, Math.ceil((deadline - now) / 1000));
+    return (
+        <div className="hud-message">
+            {text(m)}
+            {left !== null && (
+                <span className={`hud-timer${left <= 5 ? " urgent" : ""}`}>
+                    {m.status.secondsLeft(left)}
+                </span>
+            )}
+        </div>
     );
 }
 

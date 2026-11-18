@@ -8,8 +8,15 @@ UserModel = get_user_model()
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = UserModel
-        fields = ("url", "email", "password", "last_login", "date_joined")
-        extra_kwargs = {"password": {"write_only": True}}
+        fields = ("url", "email", "username", "password", "last_login", "date_joined")
+        extra_kwargs = {
+            "password": {"write_only": True},
+            "username": {"required": False, "allow_null": True},
+        }
+
+    def validate_username(self, value):
+        # Optional: blank means "show the email's local part" (display_name).
+        return value or None
 
     def create(self, validated_data):
         password = validated_data.pop("password", None)
@@ -20,6 +27,15 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 
         instance.save()
         return instance
+
+
+class MeSerializer(serializers.ModelSerializer):
+    display_name = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = UserModel
+        fields = ("uuid", "email", "username", "display_name", "points")
+        read_only_fields = fields
 
 
 class UserUpdateSerializer(serializers.HyperlinkedModelSerializer):

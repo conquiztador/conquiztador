@@ -1,10 +1,7 @@
 import * as PIXI from "pixi.js";
 
-import { GameState, PlayerId, RegionId } from "app/core/types";
-import {
-    BULGARIA_SHAPES,
-    BULGARIA_SHAPE_SIZE,
-} from "app/core/maps/bulgariaShapes";
+import { GameState, PlayerId, RegionId } from "@conquiztador/core";
+import { BULGARIA_SHAPES, BULGARIA_SHAPE_SIZE } from "@conquiztador/core";
 
 import { regionName } from "app/i18n";
 
@@ -23,7 +20,7 @@ interface RegionView {
     badge: PIXI.Container;
 }
 
-type MapState = Pick<GameState, "territories" | "players" | "map">;
+type MapState = Pick<GameState, "territories" | "players">;
 
 function centroid(points: number[]): PIXI.Point {
     let area = 0;

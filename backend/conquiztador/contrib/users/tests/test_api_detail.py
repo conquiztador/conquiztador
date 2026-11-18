@@ -30,6 +30,7 @@ class UserDetailTestCase(APITestCase, TestMixin):
                 reverse("user-detail", args=[self.user.pk])
             ),
             "email": self.user.email,
+            "username": None,
             "last_login": self.user.last_login.astimezone().isoformat(),
             "date_joined": self.user.date_joined.astimezone().isoformat(),
         }

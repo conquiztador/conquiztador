@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.http import Http404
 from django.utils.translation import gettext_lazy as _
 from rest_framework import permissions, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.authtoken import views as authtoken_views
 from rest_framework.exceptions import NotFound
 
@@ -49,6 +51,11 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return UserModel.objects.filter(pk=self.request.user.pk)
+
+    @action(detail=False, methods=("get",), url_path="me")
+    def me(self, request):
+        """The authenticated user, incl. display name and points balance."""
+        return Response(serializers.MeSerializer(request.user).data)
 
     def get_object(self):
         try:

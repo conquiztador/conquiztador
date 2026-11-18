@@ -1,0 +1,277 @@
+/* Real CSS pixels, in #screen-root, over the menu background. */
+.mp {
+    position: fixed;
+    inset: 0;
+    z-index: 2; /* corner controls (z 3) stay on top */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    /* clear the corner controls on narrow screens */
+    padding: 60px 12px 24px;
+    box-sizing: border-box;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    /* same gradient as the PIXI page backgrounds (the menu is hidden) */
+    background: linear-gradient(#cccccc, #000000);
+}
+.mp-panel {
+    width: 100%;
+    max-width: 600px;
+    box-sizing: border-box;
+    padding: 16px;
+    background: rgba(29, 36, 51, 0.95);
+    border: 1px solid #3a4660;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.mp h2,
+.mp h3 {
+    margin: 0;
+}
+.mp h2 {
+    font-size: 22px;
+}
+.mp h3 {
+    font-size: 16px;
+    color: #9fb0cc;
+}
+.mp-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+}
+.mp-user {
+    color: #9fb0cc;
+}
+.mp-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.mp-center {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+.mp-muted {
+    color: #9fb0cc;
+    font-weight: normal;
+}
+.mp-notice {
+    background: #6b2733;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.mp-button {
+    font: inherit;
+    font-weight: bold;
+    color: #fff;
+    background: #3a4660;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.mp-button.primary {
+    background: #2f6fd6;
+}
+.mp-button:hover:not(:disabled) {
+    filter: brightness(1.15);
+}
+.mp-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.mp-link {
+    font: inherit;
+    color: #8db8ff;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.mp-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.mp-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #9fb0cc;
+    font-size: 13px;
+}
+.mp input,
+.mp select {
+    font: inherit;
+    font-size: 16px; /* 16px stops iOS zooming into the field */
+    color: #fff;
+    background: #141a26;
+    border: 1px solid #3a4660;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+.mp-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.mp-rooms,
+.mp-seat-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.mp-room,
+.mp-seat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #232c3f;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+.mp-room-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.mp-room-name {
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mp-room-info .mp-muted {
+    font-size: 13px;
+}
+.mp-seats {
+    font-weight: bold;
+    color: #9fb0cc;
+}
+
+.mp-seat {
+    min-height: 50px;
+    box-sizing: border-box;
+}
+.mp-seat-n {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #3a4660;
+    font-size: 13px;
+    font-weight: bold;
+}
+.mp-seat-who {
+    flex: 1;
+    min-width: 0;
+    font-weight: bold;
+}
+.mp-seat select {
+    font-size: 14px;
+    padding: 6px 8px;
+}
+.mp-badge {
+    margin-left: 6px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: #ffe066;
+    color: #1d2433;
+    font-size: 11px;
+}
+
+.mp-settings {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 8px 12px;
+    color: #9fb0cc;
+    font-size: 13px;
+}
+@media (max-width: 480px) {
+    .mp-settings {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+}
+.mp-choice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.mp-choice button {
+    font: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    background: #232c3f;
+    border: 1px solid #3a4660;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.mp-choice button.selected {
+    background: #2f6fd6;
+    border-color: #2f6fd6;
+}
+.mp-choice button:disabled {
+    cursor: default;
+}
+.mp-choice button:disabled:not(.selected) {
+    opacity: 0.45;
+}
+
+.mp-status {
+    margin: 0;
+    min-height: 1.2em;
+    text-align: center;
+    color: #ffe066;
+    font-weight: bold;
+}
+.mp-status.counting {
+    font-size: 22px;
+}
+
+/* Shown over a running match while the connection is being restored. */
+.mp-banner {
+    position: fixed;
+    z-index: 4;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: #6b2733;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-size: 14px;
+    white-space: nowrap;
+}

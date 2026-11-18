@@ -1,0 +1,22 @@
+{
+  "name": "@conquiztador/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Conquiztador game server: rooms and authoritative matches over WebSockets.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "tsx watch src/index.ts",
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@conquiztador/core": "*",
+    "ws": "^8.18.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.20.6"
+  }
+}

@@ -6,9 +6,11 @@ import { Page } from "shared/Page";
 import { Button, COLORS, label } from "app/game/ui";
 import LayerManager from "app/managers/LayerManager";
 import { t } from "app/i18n";
+import { gameClient } from "app/multiplayer/GameClient";
 
 export class MenuPage extends Page {
     private _newGameButton: Button;
+    private multiplayerButton: Button;
     private title: PIXI.Text;
     private subtitle: PIXI.Text;
 
@@ -26,6 +28,11 @@ export class MenuPage extends Page {
         this.addChild(title, subtitle);
 
         this.addNewGamesButton();
+        this.multiplayerButton = new Button("", 300, 60, 26).onClick(() =>
+            this.openMultiplayer()
+        );
+        this.addChild(this.multiplayerButton);
+        gameClient.onExit = () => (this.visible = true);
 
         this.attachListeners();
         this.relabel();
@@ -37,6 +44,7 @@ export class MenuPage extends Page {
         this.title.text = m.title;
         this.subtitle.text = m.tagline;
         this._newGameButton.label = m.newGame;
+        this.multiplayerButton.label = m.multiplayer;
     }
 
     protected layout() {
@@ -44,6 +52,7 @@ export class MenuPage extends Page {
         this.title.position.set(x, y - 160);
         this.subtitle.position.set(x, y - 90);
         this._newGameButton.position.set(x, y);
+        this.multiplayerButton.position.set(x, y + 84);
     }
 
     private addNewGamesButton() {
@@ -60,6 +69,11 @@ export class MenuPage extends Page {
         );
 
         this._newGameButton.on("pointerup", this.onNewGameButtonClicked, this);
+    }
+
+    private openMultiplayer() {
+        this.visible = false;
+        gameClient.open();
     }
 
     private onExitButtonClicked() {

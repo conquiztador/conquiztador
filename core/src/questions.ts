@@ -1,7 +1,12 @@
-import { QuestionProvider } from "app/core/GameEngine";
-import { Rng, shuffle } from "app/core/rng";
-import { McqQuestion, NumericQuestion } from "app/core/types";
-import { QuestionDeck } from "app/services/QuestionDeckService";
+import type { QuestionProvider } from "./GameEngine";
+import { Rng, shuffle } from "./rng";
+import { McqQuestion, NumericQuestion } from "./types";
+
+/** A match's questions, with solutions. Only ever held by the game server. */
+export interface QuestionDeck {
+    mcq: McqQuestion[];
+    numeric: NumericQuestion[];
+}
 
 /**
  * Serves a match's pre-loaded questions, shuffling options and avoiding
